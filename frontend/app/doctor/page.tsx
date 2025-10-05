@@ -7,7 +7,7 @@ import { Users, Video, Calendar, TrendingUp } from 'lucide-react';
 
 export default function DoctorDashboard() {
   return (
-    <DashboardLayout userType="doctor" userName="Dr. Smith">
+    <DashboardLayout userType="doctor" userName="Current Doctor">
       <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold">Doctor Dashboard</h1>
@@ -17,27 +17,27 @@ export default function DoctorDashboard() {
         {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card
-            title="Total Patients"
-            value="24"
-            description="Active patients"
+            title="Current Patient"
+            value="1"
+            description="Active"
             icon={<Users className="h-4 w-4" />}
           />
           <Card
             title="Videos Sent"
-            value="156"
-            description="This month"
+            value="23"
+            description="Total"
             icon={<Video className="h-4 w-4" />}
           />
           <Card
-            title="Upcoming Reviews"
-            value="8"
-            description="Next 7 days"
+            title="Next Review"
+            value="Dec 8"
+            description="Scheduled"
             icon={<Calendar className="h-4 w-4" />}
           />
           <Card
             title="Completion Rate"
-            value="87%"
-            description="+5% from last month"
+            value="92%"
+            description="Patient engagement"
             icon={<TrendingUp className="h-4 w-4" />}
           />
         </div>
@@ -47,34 +47,7 @@ export default function DoctorDashboard() {
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium">John Doe completed memory exercise</p>
-                  <p className="text-sm text-muted-foreground">2 hours ago</p>
-                </div>
-                <span className="text-sm text-green-600 font-medium">Completed</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium">Mary Smith received new video instruction</p>
-                  <p className="text-sm text-muted-foreground">5 hours ago</p>
-                </div>
-                <span className="text-sm text-blue-600 font-medium">Sent</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <p className="font-medium">Robert Johnson diagnostic review scheduled</p>
-                  <p className="text-sm text-muted-foreground">Yesterday</p>
-                </div>
-                <span className="text-sm text-orange-600 font-medium">Pending</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Emma Wilson completed cognitive assessment</p>
-                  <p className="text-sm text-muted-foreground">2 days ago</p>
-                </div>
-                <span className="text-sm text-green-600 font-medium">Completed</span>
-              </div>
+              <p className="text-sm text-muted-foreground">No recent activity</p>
             </div>
           </div>
         </Card>

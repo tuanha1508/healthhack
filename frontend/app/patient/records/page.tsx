@@ -67,80 +67,12 @@ export default function HealthRecords() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Sample data
-  const medicalHistory: MedicalRecord[] = [
-    {
-      id: 1,
-      type: 'visit',
-      title: 'Annual Physical Examination',
-      date: 'Oct 28, 2024',
-      doctor: 'Dr. Sarah Johnson',
-      department: 'General Practice',
-      status: 'completed',
-      summary: 'Routine checkup completed. All vitals normal.',
-      attachments: 3
-    },
-    {
-      id: 2,
-      type: 'lab',
-      title: 'Complete Blood Count (CBC)',
-      date: 'Nov 8, 2024',
-      doctor: 'Dr. Michael Chen',
-      department: 'Laboratory',
-      status: 'completed',
-      attachments: 1
-    },
-    {
-      id: 3,
-      type: 'imaging',
-      title: 'Chest X-Ray',
-      date: 'Sep 15, 2024',
-      doctor: 'Dr. Emily Wang',
-      department: 'Radiology',
-      status: 'completed',
-      summary: 'Clear lung fields, no abnormalities detected.',
-      attachments: 2
-    },
-    {
-      id: 4,
-      type: 'prescription',
-      title: 'Medication Prescription',
-      date: 'Nov 5, 2024',
-      doctor: 'Dr. Sarah Johnson',
-      department: 'General Practice',
-      status: 'completed',
-      summary: 'Prescribed Metformin 500mg, twice daily'
-    },
-    {
-      id: 5,
-      type: 'procedure',
-      title: 'ECG Test',
-      date: 'Aug 20, 2024',
-      doctor: 'Dr. Robert Smith',
-      department: 'Cardiology',
-      status: 'completed',
-      summary: 'Normal sinus rhythm, no irregularities.',
-      attachments: 1
-    }
-  ];
+  // Medical data (will be loaded from database later)
+  const medicalHistory: MedicalRecord[] = [];
 
-  const recentLabResults: LabResult[] = [
-    { id: 1, testName: 'Glucose', value: '95 mg/dL', normalRange: '70-100 mg/dL', status: 'normal', date: 'Nov 8, 2024' },
-    { id: 2, testName: 'Cholesterol', value: '210 mg/dL', normalRange: '<200 mg/dL', status: 'high', date: 'Nov 8, 2024' },
-    { id: 3, testName: 'Hemoglobin', value: '14.5 g/dL', normalRange: '13.5-17.5 g/dL', status: 'normal', date: 'Nov 8, 2024' },
-    { id: 4, testName: 'Blood Pressure', value: '120/80 mmHg', normalRange: '<120/80 mmHg', status: 'normal', date: 'Nov 8, 2024' },
-    { id: 5, testName: 'TSH', value: '2.5 mIU/L', normalRange: '0.4-4.0 mIU/L', status: 'normal', date: 'Nov 8, 2024' },
-    { id: 6, testName: 'Vitamin D', value: '18 ng/mL', normalRange: '20-50 ng/mL', status: 'low', date: 'Nov 8, 2024' }
-  ];
+  const recentLabResults: LabResult[] = [];
 
-  const documents: Document[] = [
-    { id: 1, name: 'Annual_Physical_Report_2024.pdf', type: 'PDF', size: '2.4 MB', uploadedDate: 'Oct 28, 2024', category: 'Medical Reports' },
-    { id: 2, name: 'Blood_Test_Results_Nov.pdf', type: 'PDF', size: '1.1 MB', uploadedDate: 'Nov 8, 2024', category: 'Lab Results' },
-    { id: 3, name: 'Chest_XRay_Sept2024.jpg', type: 'Image', size: '3.5 MB', uploadedDate: 'Sep 15, 2024', category: 'Imaging' },
-    { id: 4, name: 'Prescription_Nov2024.pdf', type: 'PDF', size: '245 KB', uploadedDate: 'Nov 5, 2024', category: 'Prescriptions' },
-    { id: 5, name: 'Insurance_Card.pdf', type: 'PDF', size: '500 KB', uploadedDate: 'Jan 15, 2024', category: 'Insurance' },
-    { id: 6, name: 'Vaccination_Record.pdf', type: 'PDF', size: '1.8 MB', uploadedDate: 'Jun 20, 2024', category: 'Immunization' }
-  ];
+  const documents: Document[] = [];
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -175,7 +107,7 @@ export default function HealthRecords() {
   };
 
   return (
-    <DashboardLayout userType="patient" userName="John Doe">
+    <DashboardLayout userType="patient" userName="Current Patient">
       <div className="space-y-6">
         {/* Header */}
         <div>

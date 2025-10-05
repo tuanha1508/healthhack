@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import LocalVideoPlayer from '@/components/LocalVideoPlayer';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calendar, Clock, Video, MessageSquare, Send, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Video, MessageSquare, Send, Loader2, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -19,17 +20,20 @@ import { Input } from '@/components/ui/input';
 interface TranscriptItem {
   timestamp: number;
   text: string;
+  start?: number;
+  end?: number;
 }
 
 interface Diagnostic {
-  id: number;
+  id: string | number;
   date: string;
   time: string;
   type: string;
-  status: 'completed' | 'pending' | 'in-progress';
+  status: 'completed' | 'pending' | 'in-progress' | 'watched' | 'unwatched';
   video_url?: string;
   summary: string;
   transcript?: TranscriptItem[];
+  isLocalVideo?: boolean;
 }
 
 interface Message {
@@ -39,119 +43,10 @@ interface Message {
   timestamp: string;
 }
 
-// Hardcoded transcript for testing
-const BRAIN_FOOD_TRANSCRIPT: TranscriptItem[] = [
-  { timestamp: 6, text: "Your Brain on Food" },
-  { timestamp: 9, text: "If you sucked all of the moisture out of your brain" },
-  { timestamp: 12, text: "and broke it down to its constituent nutritional content," },
-  { timestamp: 16, text: "what would it look like?" },
-  { timestamp: 18, text: "Most of the weight of your dehydrated brain would come from fats," },
-  { timestamp: 22, text: "also known as lipids." },
-  { timestamp: 24, text: "In the remaining brain matter, you would find proteins and amino acids," },
-  { timestamp: 28, text: "traces of micronutrients," },
-  { timestamp: 30, text: "and glucose." },
-  { timestamp: 32, text: "The brain is, of course, more than just the sum of its nutritional parts," },
-  { timestamp: 37, text: "but each component does have a distinct impact on functioning," },
-  { timestamp: 41, text: "development," },
-  { timestamp: 42, text: "mood," },
-  { timestamp: 43, text: "and energy." },
-  { timestamp: 44, text: "So that post-lunch apathy," },
-  { timestamp: 46, text: "or late-night alertness you might be feeling," },
-  { timestamp: 49, text: "well, that could simply be the effects of food on your brain." },
-  { timestamp: 54, text: "Of the fats in your brain, the superstars are omegas 3 and 6." },
-  { timestamp: 59, text: "These essential fatty acids," },
-  { timestamp: 61, text: "which have been linked to preventing degenerative brain conditions," },
-  { timestamp: 65, text: "must come from our diets." },
-  { timestamp: 67, text: "So eating omega-rich foods," },
-  { timestamp: 69, text: "like nuts," },
-  { timestamp: 69, text: "seeds," },
-  { timestamp: 70, text: "and fatty fish," },
-  { timestamp: 71, text: "is crucial to the creation and maintenance of cell membranes." },
-  { timestamp: 76, text: "And while omegas are good fats for your brain," },
-  { timestamp: 79, text: "long-term consumption of other fats, like trans and saturated fats," },
-  { timestamp: 83, text: "may compromise brain health." },
-  { timestamp: 86, text: "Meanwhile, proteins and amino acids," },
-  { timestamp: 89, text: "the building block nutrients of growth and development," },
-  { timestamp: 92, text: "manipulate how we feel and behave." },
-  { timestamp: 95, text: "Amino acids contain the precursors to neurotransmitters," },
-  { timestamp: 99, text: "the chemical messengers that carry signals between neurons," },
-  { timestamp: 103, text: "affecting things like mood," },
-  { timestamp: 105, text: "sleep," },
-  { timestamp: 106, text: "attentiveness," },
-  { timestamp: 107, text: "and weight." },
-  { timestamp: 109, text: "They're one of the reasons we might feel calm after eating a large plate of pasta," },
-  { timestamp: 113, text: "or more alert after a protein-rich meal." },
-  { timestamp: 116, text: "The complex combinations of compounds in food" },
-  { timestamp: 119, text: "can stimulate brain cells to release mood-altering norepinephrine," },
-  { timestamp: 124, text: "dopamine," },
-  { timestamp: 126, text: "and serotonin." },
-  { timestamp: 127, text: "But getting to your brain cells is tricky," },
-  { timestamp: 129, text: "and amino acids have to compete for limited access." },
-  { timestamp: 133, text: "A diet with a range of foods helps maintain a balanced combination" },
-  { timestamp: 137, text: "of brain messengers," },
-  { timestamp: 139, text: "and keeps your mood from getting skewed in one direction or the other." },
-  { timestamp: 143, text: "Like the other organs in our bodies," },
-  { timestamp: 145, text: "our brains also benefit from a steady supply of micronutrients." },
-  { timestamp: 150, text: "Antioxidants in fruits and vegetables" },
-  { timestamp: 152, text: "strengthen the brain to fight off free radicals that destroy brain cells," },
-  { timestamp: 157, text: "enabling your brain to work well for a longer period of time." },
-  { timestamp: 161, text: "And without powerful micronutrients," },
-  { timestamp: 163, text: "like the vitamins B6," },
-  { timestamp: 164, text: "B12," },
-  { timestamp: 165, text: "and folic acid," },
-  { timestamp: 167, text: "our brains would be susceptible to brain disease and mental decline." },
-  { timestamp: 171, text: "Trace amounts of the minerals iron," },
-  { timestamp: 173, text: "copper," },
-  { timestamp: 174, text: "zinc," },
-  { timestamp: 175, text: "and sodium" },
-  { timestamp: 176, text: "are also fundamental to brain health and early cognitive development." },
-  { timestamp: 181, text: "In order for the brain to efficiently transform and synthesize" },
-  { timestamp: 184, text: "these valuable nutrients," },
-  { timestamp: 186, text: "it needs fuel, and lots of it." },
-  { timestamp: 188, text: "While the human brain only makes up about 2% of our body weight," },
-  { timestamp: 192, text: "it uses up to 20% of our energy resources." },
-  { timestamp: 196, text: "Most of this energy comes from carbohydrates" },
-  { timestamp: 199, text: "that our body digests into glucose, or blood sugar." },
-  { timestamp: 204, text: "The frontal lobes are so sensitive to drops in glucose, in fact," },
-  { timestamp: 208, text: "that a change in mental function is one of the primary signals" },
-  { timestamp: 211, text: "of nutrient deficiency." },
-  { timestamp: 214, text: "Assuming that we are getting glucose regularly," },
-  { timestamp: 217, text: "how does the specific type of carbohydrates we eat affect our brains?" },
-  { timestamp: 222, text: "Carbs come in three forms:" },
-  { timestamp: 224, text: "starch," },
-  { timestamp: 224, text: "sugar," },
-  { timestamp: 225, text: "and fiber." },
-  { timestamp: 227, text: "While on most nutrition labels," },
-  { timestamp: 228, text: "they are all lumped into one total carb count," },
-  { timestamp: 232, text: "the ratio of the sugar and fiber subgroups to the whole amount" },
-  { timestamp: 236, text: "affect how the body and brain respond." },
-  { timestamp: 239, text: "A high glycemic food, like white bread," },
-  { timestamp: 242, text: "causes a rapid release of glucose into the blood," },
-  { timestamp: 245, text: "and then comes the dip." },
-  { timestamp: 247, text: "Blood sugar shoots down, and with it, our attention span and mood." },
-  { timestamp: 252, text: "On the other hand, oats, grains, and legumes have slower glucose release," },
-  { timestamp: 257, text: "enabling a steadier level of attentiveness." },
-  { timestamp: 261, text: "For sustained brain power," },
-  { timestamp: 263, text: "opting for a varied diet of nutrient-rich foods is critical." },
-  { timestamp: 267, text: "When it comes to what you bite, chew, and swallow," },
-  { timestamp: 269, text: "your choices have a direct and long-lasting effect" },
-  { timestamp: 273, text: "on the most powerful organ in your body." }
-];
 
 export default function DiagnosticsPage() {
-  // Hardcoded test video for demonstration
-  const testDiagnostic: Diagnostic = {
-    id: 1,
-    date: "December 15, 2024",
-    time: "10:30 AM",
-    type: "Educational: Your Brain on Food",
-    status: 'completed',
-    video_url: "https://www.youtube.com/watch?v=xyQY8a-ng6g",
-    summary: "Learn about how nutrition affects your brain function, mood, and cognitive performance.",
-    transcript: BRAIN_FOOD_TRANSCRIPT
-  };
-
-  const [diagnosticHistory, setDiagnosticHistory] = useState<Diagnostic[]>([testDiagnostic]);
+  const [diagnosticHistory, setDiagnosticHistory] = useState<Diagnostic[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -160,6 +55,37 @@ export default function DiagnosticsPage() {
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch videos from backend on mount
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const fetchVideos = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/videos/list');
+      if (response.ok) {
+        const data = await response.json();
+        // Transform the transcript format if needed
+        const videos = data.videos.map((video: any) => ({
+          ...video,
+          isLocalVideo: true,
+          // Convert transcript format from {start, end, text} to {timestamp, text} if needed
+          transcript: video.transcript?.map((item: any) => ({
+            timestamp: item.start || 0,
+            start: item.start,
+            end: item.end,
+            text: item.text
+          })) || []
+        }));
+        setDiagnosticHistory(videos);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle diagnostic selection
   const handleSelectDiagnostic = (diagnostic: Diagnostic) => {
@@ -264,18 +190,43 @@ export default function DiagnosticsPage() {
   };
 
   return (
-    <DashboardLayout userType="patient" userName="John Doe">
+    <DashboardLayout userType="patient" userName="Current Patient">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Medical Video Library</h1>
-          <p className="text-muted-foreground mt-2">Watch educational videos and ask questions about the content</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">Medical Video Library</h1>
+            <p className="text-muted-foreground mt-2">Watch educational videos and ask questions about the content</p>
+          </div>
+          <Button
+            onClick={fetchVideos}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
         </div>
 
         {/* Diagnostics List */}
         <Card title="Available Videos" subtitle="Click on any video to watch and learn">
           <div className="space-y-4">
-            {diagnosticHistory.map((diagnostic) => (
+            {isLoading && diagnosticHistory.length === 0 ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Loading videos...</span>
+              </div>
+            ) : diagnosticHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground p-8">
+                No videos available yet. Your doctor will send you instructional videos that will appear here.
+              </p>
+            ) : (
+              diagnosticHistory.map((diagnostic) => (
               <button
                 key={diagnostic.id}
                 onClick={() => handleSelectDiagnostic(diagnostic)}
@@ -306,7 +257,8 @@ export default function DiagnosticsPage() {
                   </div>
                 </div>
               </button>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
@@ -321,17 +273,28 @@ export default function DiagnosticsPage() {
           </DialogHeader>
 
           <div className="flex gap-4 h-[calc(90vh-8rem)] overflow-hidden">
-            {/* Left side - YouTube Player */}
+            {/* Left side - Video Player */}
             <div className="w-[70%]">
               {selectedDiagnostic?.video_url && (
-                <YouTubePlayer
-                  videoUrl={selectedDiagnostic.video_url}
-                  transcript={selectedDiagnostic.transcript || []}
-                  currentTime={currentTime}
-                  isPlaying={isPlaying}
-                  onTimeUpdate={setCurrentTime}
-                  onPlayPause={handlePlayPause}
-                />
+                selectedDiagnostic.isLocalVideo ? (
+                  <LocalVideoPlayer
+                    videoUrl={selectedDiagnostic.video_url}
+                    transcript={selectedDiagnostic.transcript || []}
+                    currentTime={currentTime}
+                    isPlaying={isPlaying}
+                    onTimeUpdate={setCurrentTime}
+                    onPlayPause={handlePlayPause}
+                  />
+                ) : (
+                  <YouTubePlayer
+                    videoUrl={selectedDiagnostic.video_url}
+                    transcript={selectedDiagnostic.transcript || []}
+                    currentTime={currentTime}
+                    isPlaying={isPlaying}
+                    onTimeUpdate={setCurrentTime}
+                    onPlayPause={handlePlayPause}
+                  />
+                )
               )}
             </div>
 

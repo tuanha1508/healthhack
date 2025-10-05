@@ -137,7 +137,8 @@ async def transcribe_audio(audio: UploadFile = File(...)):
                 transcription = groq_client.audio.transcriptions.create(
                     file=(audio.filename or "recording.webm", file.read()),
                     model="whisper-large-v3",
-                    response_format="verbose_json"
+                    response_format="verbose_json",
+                    language="en"  # Force English language recognition
                 )
                 logger.info("Transcription completed successfully")
 
@@ -255,7 +256,8 @@ async def transcribe_audio_turbo(audio: UploadFile = File(...)):
                 transcription = groq_client.audio.transcriptions.create(
                     file=(audio.filename or "recording.webm", file.read()),
                     model="whisper-large-v3-turbo",
-                    response_format="verbose_json"
+                    response_format="verbose_json",
+                    language="en"  # Force English language recognition
                 )
 
             # Process segments

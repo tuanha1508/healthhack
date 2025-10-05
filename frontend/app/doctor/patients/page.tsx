@@ -12,32 +12,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SubtitleEditor, { Subtitle } from '@/components/SubtitleEditor';
 import {
-  Search,
   Video,
   Calendar,
   Clock,
-  ChevronRight,
-  User,
   FileVideo,
   Plus,
-  Mic,
   Camera,
   Send,
   StopCircle,
   AlertCircle,
-  Loader2,
-  Subtitles
+  Loader2
 } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  diagnosis: string;
-  lastVisit: string;
-  videosReceived: number;
-  completionRate: number;
-}
 
 interface VideoInstruction {
   id: number;
@@ -49,8 +34,6 @@ interface VideoInstruction {
 }
 
 export default function PatientsPage() {
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideo, setRecordedVideo] = useState<Blob | null>(null);
@@ -60,6 +43,7 @@ export default function PatientsPage() {
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [videoInstructions, setVideoInstructions] = useState<VideoInstruction[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -67,99 +51,41 @@ export default function PatientsPage() {
   const chunksRef = useRef<Blob[]>([]);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Sample data
-  const patients: Patient[] = [
-    {
-      id: 1,
-      name: "John Doe",
-      age: 72,
-      diagnosis: "Early-stage Alzheimer's",
-      lastVisit: "Nov 10, 2024",
-      videosReceived: 23,
-      completionRate: 92
-    },
-    {
-      id: 2,
-      name: "Mary Smith",
-      age: 68,
-      diagnosis: "Mild Cognitive Impairment",
-      lastVisit: "Nov 8, 2024",
-      videosReceived: 18,
-      completionRate: 88
-    },
-    {
-      id: 3,
-      name: "Robert Johnson",
-      age: 75,
-      diagnosis: "Memory Assessment Required",
-      lastVisit: "Nov 5, 2024",
-      videosReceived: 12,
-      completionRate: 95
-    },
-    {
-      id: 4,
-      name: "Emma Wilson",
-      age: 70,
-      diagnosis: "Mild Dementia",
-      lastVisit: "Nov 12, 2024",
-      videosReceived: 30,
-      completionRate: 85
-    },
-    {
-      id: 5,
-      name: "William Brown",
-      age: 69,
-      diagnosis: "Cognitive Monitoring",
-      lastVisit: "Nov 7, 2024",
-      videosReceived: 15,
-      completionRate: 90
-    }
-  ];
+  // Current patient info (will be loaded from database later)
+  const currentPatient = {
+    name: "Current Patient",
+    age: 0,
+    diagnosis: "",
+    lastVisit: "",
+    videosReceived: 0,
+    completionRate: 0
+  };
 
-  const videoInstructions: VideoInstruction[] = [
-    {
-      id: 1,
-      title: "Daily Memory Exercise - Word Association",
-      dateSent: "Nov 12, 2024",
-      duration: "5:30",
-      status: "watched",
-      completedAt: "Nov 12, 2024 3:00 PM"
-    },
-    {
-      id: 2,
-      title: "Cognitive Assessment - Pattern Recognition",
-      dateSent: "Nov 10, 2024",
-      duration: "8:15",
-      status: "watched",
-      completedAt: "Nov 11, 2024 10:00 AM"
-    },
-    {
-      id: 3,
-      title: "Memory Training - Story Recall",
-      dateSent: "Nov 8, 2024",
-      duration: "6:45",
-      status: "in-progress"
-    },
-    {
-      id: 4,
-      title: "Daily Exercise - Object Naming",
-      dateSent: "Nov 6, 2024",
-      duration: "4:20",
-      status: "watched",
-      completedAt: "Nov 7, 2024 2:30 PM"
-    },
-    {
-      id: 5,
-      title: "Weekly Assessment - Verbal Fluency",
-      dateSent: "Nov 4, 2024",
-      duration: "7:10",
-      status: "unwatched"
-    }
-  ];
+  // Load videos on mount
+  useEffect(() => {
+    fetchVideos();
+  }, []);
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchVideos = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/videos/list');
+      if (response.ok) {
+        const data = await response.json();
+        // Transform for doctor's view
+        const videos = data.videos.map((video: any) => ({
+          id: video.id,
+          title: video.type.replace('Doctor Instruction: ', ''),
+          dateSent: video.date,
+          duration: '0:00', // Duration would need to be calculated
+          status: video.status as 'watched' | 'unwatched' | 'in-progress',
+          completedAt: video.completedAt
+        }));
+        setVideoInstructions(videos);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
 
   // Initialize camera when modal opens
   useEffect(() => {
@@ -344,27 +270,46 @@ export default function PatientsPage() {
     }
   };
 
-  const handleSendVideo = () => {
+  const handleSendVideo = async () => {
     if (recordedVideo && videoTitle) {
-      // In a real app, you would upload the video to a server here
-      console.log('Sending video:', {
-        title: videoTitle,
-        description: videoDescription,
-        patientId: selectedPatient?.id,
-        videoBlob: recordedVideo,
-        subtitles: subtitles
-      });
+      try {
+        // Create FormData to send video and metadata
+        const formData = new FormData();
+        formData.append('video', recordedVideo, 'instruction.webm');
+        formData.append('title', videoTitle);
+        formData.append('description', videoDescription);
+        formData.append('subtitles', JSON.stringify(subtitles));
 
-      // Reset and close modal
-      setIsRecordingModalOpen(false);
-      setIsRecording(false);
-      setRecordedVideo(null);
-      setVideoTitle('');
-      setVideoDescription('');
-      setSubtitles([]);
+        // Upload video to backend
+        const response = await fetch('http://localhost:8000/api/videos/upload', {
+          method: 'POST',
+          body: formData
+        });
 
-      // Show success message (you could add a toast notification here)
-      alert(`Video instruction "${videoTitle}" with ${subtitles.length} subtitles sent successfully to ${selectedPatient?.name}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Video uploaded successfully:', data);
+
+          // Reset and close modal
+          setIsRecordingModalOpen(false);
+          setIsRecording(false);
+          setRecordedVideo(null);
+          setVideoTitle('');
+          setVideoDescription('');
+          setSubtitles([]);
+
+          // Show success message
+          alert(`Video instruction "${videoTitle}" with ${subtitles.length} subtitles sent successfully to ${currentPatient.name}`);
+
+          // Refresh the video list (in a real app, you would fetch from the server)
+          window.location.reload();
+        } else {
+          throw new Error('Failed to upload video');
+        }
+      } catch (error) {
+        console.error('Error sending video:', error);
+        alert('Failed to send video. Please make sure the backend server is running.');
+      }
     }
   };
 
@@ -381,158 +326,88 @@ export default function PatientsPage() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">Patients</h1>
-            <p className="text-muted-foreground mt-2">Manage patient video instructions and monitor progress</p>
+            <h1 className="text-3xl font-bold">Patient Management</h1>
+            <p className="text-muted-foreground mt-2">Manage video instructions and monitor progress</p>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search patients by name..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Patient List */}
-          <div className="lg:col-span-1">
-            <Card>
-              <div className="p-4 border-b">
-                <h2 className="font-semibold">Patient List</h2>
+        {/* Patient Details Card */}
+        <Card>
+          <div className="p-6 border-b">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">{currentPatient.name}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{currentPatient.diagnosis}</p>
               </div>
-              <ScrollArea className="h-[600px]">
-                <div className="p-4 space-y-2">
-                  {filteredPatients.map((patient) => (
-                    <button
-                      key={patient.id}
-                      onClick={() => setSelectedPatient(patient)}
-                      className={`w-full p-4 rounded-lg border text-left transition-colors ${
-                        selectedPatient?.id === patient.id
-                          ? 'bg-secondary border-primary'
-                          : 'hover:bg-secondary/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
+              <Button
+                onClick={() => setIsRecordingModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Record New Instruction
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-secondary/50 rounded-lg">
+                <p className="text-2xl font-bold">{currentPatient.videosReceived}</p>
+                <p className="text-xs text-muted-foreground">Videos Sent</p>
+              </div>
+              <div className="text-center p-3 bg-secondary/50 rounded-lg">
+                <p className="text-2xl font-bold">{currentPatient.completionRate}%</p>
+                <p className="text-xs text-muted-foreground">Completion Rate</p>
+              </div>
+              <div className="text-center p-3 bg-secondary/50 rounded-lg">
+                <p className="text-sm font-medium mt-1">{currentPatient.lastVisit}</p>
+                <p className="text-xs text-muted-foreground">Last Visit</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <h3 className="font-semibold mb-4">Video Instruction History</h3>
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-3">
+                {videoInstructions.map((video) => (
+                  <div key={video.id} className="p-4 border rounded-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start gap-3">
+                        <FileVideo className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
-                          <p className="font-medium">{patient.name}</p>
-                          <p className="text-sm text-muted-foreground">Age: {patient.age}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground mt-1" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">{patient.diagnosis}</p>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="flex items-center gap-1">
-                            <Video className="h-3 w-3" />
-                            {patient.videosReceived} videos
-                          </span>
-                          <span className="text-green-600">{patient.completionRate}% rate</span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </Card>
-          </div>
-
-          {/* Patient Details and Video History */}
-          <div className="lg:col-span-2">
-            {selectedPatient ? (
-              <Card>
-                <div className="p-6 border-b">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold">{selectedPatient.name}</h2>
-                      <p className="text-sm text-muted-foreground mt-1">{selectedPatient.diagnosis}</p>
-                    </div>
-                    <Button
-                      onClick={() => setIsRecordingModalOpen(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Record New Instruction
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                      <p className="text-2xl font-bold">{selectedPatient.videosReceived}</p>
-                      <p className="text-xs text-muted-foreground">Videos Sent</p>
-                    </div>
-                    <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                      <p className="text-2xl font-bold">{selectedPatient.completionRate}%</p>
-                      <p className="text-xs text-muted-foreground">Completion Rate</p>
-                    </div>
-                    <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                      <p className="text-sm font-medium mt-1">{selectedPatient.lastVisit}</p>
-                      <p className="text-xs text-muted-foreground">Last Visit</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <h3 className="font-semibold mb-4">Video Instruction History</h3>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-3">
-                      {videoInstructions.map((video) => (
-                        <div key={video.id} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-start gap-3">
-                              <FileVideo className="h-5 w-5 text-muted-foreground mt-0.5" />
-                              <div>
-                                <p className="font-medium">{video.title}</p>
-                                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {video.dateSent}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {video.duration}
-                                  </span>
-                                </div>
-                                {video.completedAt && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Completed: {video.completedAt}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <Badge
-                              variant={
-                                video.status === 'watched' ? 'default' :
-                                video.status === 'in-progress' ? 'secondary' :
-                                'outline'
-                              }
-                            >
-                              {video.status}
-                            </Badge>
+                          <p className="font-medium">{video.title}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {video.dateSent}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {video.duration}
+                            </span>
                           </div>
+                          {video.completedAt && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Completed: {video.completedAt}
+                            </p>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      <Badge
+                        variant={
+                          video.status === 'watched' ? 'default' :
+                          video.status === 'in-progress' ? 'secondary' :
+                          'outline'
+                        }
+                      >
+                        {video.status}
+                      </Badge>
                     </div>
-                  </ScrollArea>
-                </div>
-              </Card>
-            ) : (
-              <Card>
-                <div className="p-12 text-center">
-                  <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Select a Patient</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose a patient from the list to view their video instruction history
-                  </p>
-                </div>
-              </Card>
-            )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
-        </div>
+        </Card>
 
         {/* Recording Modal */}
         <Dialog open={isRecordingModalOpen} onOpenChange={handleModalClose}>
@@ -540,7 +415,7 @@ export default function PatientsPage() {
             <DialogHeader>
               <DialogTitle>Record Video Instruction</DialogTitle>
               <DialogDescription>
-                Record a new video instruction for {selectedPatient?.name}
+                Record a new video instruction for {currentPatient.name}
               </DialogDescription>
             </DialogHeader>
 

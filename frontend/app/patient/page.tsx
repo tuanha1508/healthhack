@@ -19,16 +19,16 @@ import {
 } from 'lucide-react';
 
 export default function PatientDashboard() {
-  // Sample data focused on Alzheimer's diagnostics
+  // Cognitive metrics (will be loaded from database later)
   const cognitiveMetrics = {
-    lastAssessment: 'Nov 8, 2024',
-    nextAssessment: 'Dec 8, 2024',
-    voiceAnalysisCount: '12',
-    consistencyScore: '85%'
+    lastAssessment: '-',
+    nextAssessment: '-',
+    voiceAnalysisCount: '0',
+    consistencyScore: '-'
   };
 
   return (
-    <DashboardLayout userType="patient" userName="John Doe">
+    <DashboardLayout userType="patient" userName="Current Patient">
       <div className="space-y-6">
         {/* Header */}
         <div>
