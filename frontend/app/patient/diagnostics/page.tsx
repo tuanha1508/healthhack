@@ -52,6 +52,7 @@ export default function DiagnosticsPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -133,7 +134,7 @@ export default function DiagnosticsPage() {
             message: inputMessage,
             transcript: selectedDiagnostic.transcript || [],
             current_time: currentTime,
-            video_duration: 273 // Total duration of the brain food video
+            video_duration: videoDuration || 0 // Use actual video duration
           }),
         });
 
@@ -265,14 +266,14 @@ export default function DiagnosticsPage() {
 
       {/* Modal for viewing video */}
       <Dialog open={!!selectedDiagnostic} onOpenChange={() => setSelectedDiagnostic(null)}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] overflow-y-auto scrollbar-hide">
           <DialogHeader>
             <DialogTitle>
               {selectedDiagnostic?.type} - {selectedDiagnostic?.date}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex gap-4 h-[calc(90vh-8rem)] overflow-hidden">
+          <div className="flex gap-4 h-[calc(90vh-8rem)]">
             {/* Left side - Video Player */}
             <div className="w-[70%]">
               {selectedDiagnostic?.video_url && (
@@ -284,6 +285,7 @@ export default function DiagnosticsPage() {
                     isPlaying={isPlaying}
                     onTimeUpdate={setCurrentTime}
                     onPlayPause={handlePlayPause}
+                    onDurationChange={setVideoDuration}
                   />
                 ) : (
                   <YouTubePlayer

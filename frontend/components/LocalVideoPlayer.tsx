@@ -20,6 +20,7 @@ interface LocalVideoPlayerProps {
   isPlaying: boolean;
   onTimeUpdate: (time: number) => void;
   onPlayPause: (playing: boolean) => void;
+  onDurationChange?: (duration: number) => void;
 }
 
 export default function LocalVideoPlayer({
@@ -28,7 +29,8 @@ export default function LocalVideoPlayer({
   currentTime,
   isPlaying,
   onTimeUpdate,
-  onPlayPause
+  onPlayPause,
+  onDurationChange
 }: LocalVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [duration, setDuration] = useState(0);
@@ -46,6 +48,13 @@ export default function LocalVideoPlayer({
       }
     }
   }, [isPlaying]);
+
+  // Load video metadata when URL changes
+  useEffect(() => {
+    if (videoRef.current && videoUrl) {
+      videoRef.current.load();
+    }
+  }, [videoUrl]);
 
   // Handle time updates
   useEffect(() => {
@@ -66,7 +75,31 @@ export default function LocalVideoPlayer({
     };
 
     const handleLoadedMetadata = () => {
+      console.log('Video metadata loaded, duration:', video.duration);
       setDuration(video.duration);
+      if (onDurationChange) {
+        onDurationChange(video.duration);
+      }
+    };
+
+    const handleCanPlay = () => {
+      console.log('Video can play, duration:', video.duration);
+      if (video.duration && video.duration !== Infinity) {
+        setDuration(video.duration);
+        if (onDurationChange) {
+          onDurationChange(video.duration);
+        }
+      }
+    };
+
+    const handleDurationChange = () => {
+      console.log('Duration changed:', video.duration);
+      if (video.duration && video.duration !== Infinity) {
+        setDuration(video.duration);
+        if (onDurationChange) {
+          onDurationChange(video.duration);
+        }
+      }
     };
 
     const handleProgress = () => {
@@ -78,14 +111,18 @@ export default function LocalVideoPlayer({
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('durationchange', handleDurationChange);
     video.addEventListener('progress', handleProgress);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('progress', handleProgress);
     };
-  }, [transcript, onTimeUpdate]);
+  }, [transcript, onTimeUpdate, onDurationChange]);
 
   const handlePlayPause = () => {
     onPlayPause(!isPlaying);
@@ -115,6 +152,9 @@ export default function LocalVideoPlayer({
   };
 
   const formatTime = (seconds: number) => {
+    if (!seconds || !isFinite(seconds) || isNaN(seconds)) {
+      return '0:00';
+    }
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -142,6 +182,8 @@ export default function LocalVideoPlayer({
           className="w-full h-auto"
           onClick={handlePlayPause}
           controls={false}
+          preload="metadata"
+          onError={(e) => console.error('Video error:', e)}
         />
 
         {/* Subtitle Overlay */}
@@ -160,11 +202,12 @@ export default function LocalVideoPlayer({
         <div className="space-y-2">
           <div className="relative">
             <Slider
-              value={[currentTime]}
-              max={duration || 100}
+              value={[currentTime || 0]}
+              max={duration || 1}
               step={0.1}
               onValueChange={handleSeek}
               className="w-full"
+              disabled={!duration || duration === 0}
             />
             {/* Buffered Progress */}
             <div
@@ -174,7 +217,7 @@ export default function LocalVideoPlayer({
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+            <span>{duration > 0 ? formatTime(duration) : 'Loading...'}</span>
           </div>
         </div>
 
