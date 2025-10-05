@@ -4,19 +4,21 @@ import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/ui/badge';
-import { FileVideo, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileVideo, Calendar, Clock, CheckCircle, AlertCircle, Pill } from 'lucide-react';
 
-interface VideoActivity {
-  id: number;
+interface Activity {
+  id: string;
+  type: 'video' | 'prescription';
   title: string;
   date: string;
-  status: 'watched' | 'unwatched' | 'in-progress';
+  status?: 'watched' | 'unwatched' | 'in-progress' | 'read' | 'unread' | 'active';
   completedAt?: string;
   patientName?: string;
+  medications?: string[];
 }
 
 export default function DoctorDashboard() {
-  const [recentActivity, setRecentActivity] = useState<VideoActivity[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -26,42 +28,56 @@ export default function DoctorDashboard() {
   const fetchRecentActivity = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/videos/list');
-      if (response.ok) {
-        const data = await response.json();
-        // Transform and sort videos by date (most recent first)
-        const activities = data.videos
-          .map((video: any) => ({
-            id: video.id,
-            title: video.type.replace('Doctor Instruction: ', ''),
-            date: video.date,
-            status: video.status as 'watched' | 'unwatched' | 'in-progress',
-            completedAt: video.completedAt,
-            patientName: 'Current Patient' // In a real app, this would come from the API
-          }))
-          .slice(0, 5); // Show only the 5 most recent activities
-        setRecentActivity(activities);
+      // Fetch both videos and prescriptions
+      const [videosResponse, prescriptionsResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/videos/list'),
+        fetch('http://localhost:8000/api/prescription/list')
+      ]);
+
+      const allActivities: Activity[] = [];
+
+      // Process videos
+      if (videosResponse.ok) {
+        const videosData = await videosResponse.json();
+        const videoActivities: Activity[] = videosData.videos.map((video: any) => ({
+          id: video.id,
+          type: 'video' as const,
+          title: video.type.replace('Doctor Instruction: ', ''),
+          date: video.date,
+          status: video.status as 'watched' | 'unwatched' | 'in-progress',
+          completedAt: video.completedAt,
+          patientName: 'Current Patient'
+        }));
+        allActivities.push(...videoActivities);
       }
+
+      // Process prescriptions
+      if (prescriptionsResponse.ok) {
+        const prescriptionsData = await prescriptionsResponse.json();
+        const prescriptionActivities: Activity[] = prescriptionsData.prescriptions.map((prescription: any) => ({
+          id: prescription.id,
+          type: 'prescription' as const,
+          title: `Prescribed ${prescription.medications.length} medication${prescription.medications.length > 1 ? 's' : ''}`,
+          date: new Date(prescription.created_at).toLocaleDateString(),
+          status: prescription.read ? 'read' : 'unread',
+          completedAt: prescription.read_at ? new Date(prescription.read_at).toLocaleDateString() : undefined,
+          patientName: prescription.patient_name,
+          medications: prescription.medications
+        }));
+        allActivities.push(...prescriptionActivities);
+      }
+
+      // Sort all activities by date (most recent first)
+      allActivities.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      // Take the 8 most recent activities
+      setRecentActivity(allActivities.slice(0, 8));
     } catch (error) {
       console.error('Error fetching recent activity:', error);
-      // Set some mock data if API fails
-      setRecentActivity([
-        {
-          id: 1,
-          title: "Memory Exercise",
-          date: "2024-01-05",
-          status: "watched",
-          completedAt: "2024-01-05",
-          patientName: "Current Patient"
-        },
-        {
-          id: 2,
-          title: "Daily Routine",
-          date: "2024-01-04",
-          status: "in-progress",
-          patientName: "Current Patient"
-        }
-      ]);
     } finally {
       setIsLoading(false);
     }
@@ -70,12 +86,22 @@ export default function DoctorDashboard() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'watched':
+      case 'read':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'in-progress':
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'unread':
+      case 'unwatched':
       default:
         return <Clock className="h-4 w-4 text-gray-400" />;
     }
+  };
+
+  const getActivityIcon = (type: string) => {
+    if (type === 'prescription') {
+      return <Pill className="h-5 w-5 text-blue-600 mt-0.5" />;
+    }
+    return <FileVideo className="h-5 w-5 text-muted-foreground mt-0.5" />;
   };
 
   return (
@@ -99,20 +125,40 @@ export default function DoctorDashboard() {
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-secondary/50 transition-colors">
                     <div className="flex items-start gap-3">
-                      <FileVideo className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      {getActivityIcon(activity.type)}
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-sm">{activity.title}</p>
-                          {getStatusIcon(activity.status)}
+                          {activity.status && getStatusIcon(activity.status)}
                         </div>
+
+                        {/* Show medications list for prescriptions */}
+                        {activity.type === 'prescription' && activity.medications && (
+                          <div className="mt-1">
+                            <p className="text-xs text-muted-foreground mb-1">Medications:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {activity.medications.slice(0, 3).map((med, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {med}
+                                </Badge>
+                              ))}
+                              {activity.medications.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{activity.medications.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Sent: {activity.date}
+                            {activity.type === 'prescription' ? 'Prescribed' : 'Sent'}: {activity.date}
                           </span>
                           {activity.completedAt && (
                             <span className="text-green-600">
-                              Completed: {activity.completedAt}
+                              {activity.type === 'prescription' ? 'Read' : 'Completed'}: {activity.completedAt}
                             </span>
                           )}
                         </div>
@@ -125,9 +171,13 @@ export default function DoctorDashboard() {
                     </div>
                     <Badge
                       variant={
-                        activity.status === 'watched' ? 'default' :
+                        activity.status === 'watched' || activity.status === 'read' ? 'default' :
                         activity.status === 'in-progress' ? 'secondary' :
                         'outline'
+                      }
+                      className={
+                        activity.status === 'watched' || activity.status === 'read' ? 'bg-green-500' :
+                        activity.status === 'unread' ? 'bg-blue-600' : ''
                       }
                     >
                       {activity.status}

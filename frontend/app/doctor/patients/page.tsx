@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SubtitleEditor, { Subtitle } from '@/components/SubtitleEditor';
+import PrescriptionModal from '@/components/PrescriptionModal';
 import {
   Video,
   Calendar,
@@ -22,7 +23,8 @@ import {
   StopCircle,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Pill
 } from 'lucide-react';
 
 interface VideoInstruction {
@@ -34,8 +36,20 @@ interface VideoInstruction {
   completedAt?: string;
 }
 
+interface Prescription {
+  id: string;
+  patient_name: string;
+  doctor_name: string;
+  medications: string[];
+  created_at: string;
+  status: string;
+  read: boolean;
+  read_at?: string;
+}
+
 export default function PatientsPage() {
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideo, setRecordedVideo] = useState<Blob | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -45,6 +59,7 @@ export default function PatientsPage() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoInstructions, setVideoInstructions] = useState<VideoInstruction[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -62,9 +77,10 @@ export default function PatientsPage() {
     completionRate: 0
   };
 
-  // Load videos on mount
+  // Load videos and prescriptions on mount
   useEffect(() => {
     fetchVideos();
+    fetchPrescriptions();
   }, []);
 
   const fetchVideos = async () => {
@@ -85,6 +101,18 @@ export default function PatientsPage() {
       }
     } catch (error) {
       console.error('Error fetching videos:', error);
+    }
+  };
+
+  const fetchPrescriptions = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/prescription/list');
+      if (response.ok) {
+        const data = await response.json();
+        setPrescriptions(data.prescriptions);
+      }
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
     }
   };
 
@@ -350,6 +378,14 @@ export default function PatientsPage() {
                   <RefreshCw className="h-4 w-4" />
                 </Button>
                 <Button
+                  onClick={() => setIsPrescriptionModalOpen(true)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Pill className="h-4 w-4" />
+                  Prescribe Medicine
+                </Button>
+                <Button
                   onClick={() => setIsRecordingModalOpen(true)}
                   className="flex items-center gap-2"
                 >
@@ -401,6 +437,97 @@ export default function PatientsPage() {
                 ))}
               </div>
             </ScrollArea>
+          </div>
+        </Card>
+
+        {/* Prescription History Card */}
+        <Card>
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-semibold text-xl">Prescription History</h3>
+              <Button
+                onClick={fetchPrescriptions}
+                variant="outline"
+                size="icon"
+                title="Refresh prescriptions"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {prescriptions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Pill className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No prescriptions sent yet</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {prescriptions.map((prescription) => (
+                    <div key={prescription.id} className="p-4 border rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start gap-3">
+                          <Pill className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium">
+                              {prescription.medications.length} Medication{prescription.medications.length > 1 ? 's' : ''} Prescribed
+                            </p>
+                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(prescription.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {prescription.read ? (
+                            <Badge variant="outline" className="bg-green-50">
+                              <span className="text-green-700">Read</span>
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="bg-blue-600">
+                              Unread
+                            </Badge>
+                          )}
+                          <Badge
+                            variant={prescription.status === 'active' ? 'default' : 'secondary'}
+                            className={prescription.status === 'active' ? 'bg-green-600' : ''}
+                          >
+                            {prescription.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Medications List */}
+                      <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Medications:</p>
+                        <ul className="space-y-1">
+                          {prescription.medications.map((med, idx) => (
+                            <li key={idx} className="text-sm flex items-center gap-2">
+                              <span className="w-1 h-1 bg-blue-600 rounded-full"></span>
+                              {med}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {prescription.read && prescription.read_at && (
+                        <p className="text-xs text-green-600 mt-2">
+                          Read by patient: {new Date(prescription.read_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
           </div>
         </Card>
 
@@ -577,6 +704,17 @@ export default function PatientsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Prescription Modal */}
+        <PrescriptionModal
+          isOpen={isPrescriptionModalOpen}
+          onClose={() => {
+            setIsPrescriptionModalOpen(false);
+            fetchPrescriptions(); // Refresh prescription list after closing modal
+          }}
+          patientName={currentPatient.name}
+          patientId={1} // You can update this with actual patient ID
+        />
       </div>
     </DashboardLayout>
   );

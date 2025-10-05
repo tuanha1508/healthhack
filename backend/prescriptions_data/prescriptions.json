@@ -1,0 +1,38 @@
+[
+  {
+    "id": "d43186ef-88f2-4a68-ba64-87a17abc31c7",
+    "patient_id": 1,
+    "patient_name": "Current Patient",
+    "doctor_name": "Dr. Smith",
+    "medications": [
+      "morphine",
+      "oxycodone",
+      "tramadol"
+    ],
+    "created_at": "2025-10-05T04:49:03.634430",
+    "status": "active",
+    "read": true,
+    "read_at": "2025-10-05T04:50:35.900460"
+  },
+  {
+    "id": "9979fc18-9fa6-4c22-84be-bb93b24e9599",
+    "patient_id": 1,
+    "patient_name": "Current Patient",
+    "doctor_name": "Dr. Smith",
+    "medications": [
+      "Morphine",
+      "Simvastatin",
+      "prasugrel",
+      "Bupropion",
+      "Citalopram",
+      "Risperidone",
+      "Pantoprazole",
+      "Oxycodone",
+      "citalopram"
+    ],
+    "created_at": "2025-10-05T05:00:45.285648",
+    "status": "active",
+    "read": true,
+    "read_at": "2025-10-05T05:01:03.129797"
+  }
+]

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import chat, diagnostics, youtube, transcribe, videos
+from app.api.routes import chat, diagnostics, youtube, transcribe, videos, prescription
 from app.core.config import settings
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.include_router(diagnostics.router, prefix="/api/diagnostics", tags=["diagnos
 app.include_router(youtube.router, prefix="/api/youtube", tags=["youtube"])
 app.include_router(transcribe.router, prefix="/api/transcribe", tags=["transcribe"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
+app.include_router(prescription.router, prefix="/api/prescription", tags=["prescription"])
 
 @app.get("/")
 async def root():

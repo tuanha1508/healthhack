@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   Circle,
   PlayCircle,
-  AlertCircle
+  AlertCircle,
+  Pill
 } from 'lucide-react';
 
 interface VideoItem {
@@ -27,12 +28,13 @@ interface VideoItem {
 }
 
 interface ActivityItem {
-  id: number;
-  type: 'video_watched' | 'video_added' | 'assessment_completed';
+  id: string | number;
+  type: 'video_watched' | 'video_added' | 'prescription_received' | 'prescription_read';
   title: string;
   description: string;
   timestamp: string;
   icon: React.ReactNode;
+  medications?: string[];
 }
 
 export default function PatientDashboard() {
@@ -48,24 +50,29 @@ export default function PatientDashboard() {
   const fetchVideosAndActivity = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/videos/list');
-      if (response.ok) {
-        const data = await response.json();
+      // Fetch both videos and prescriptions
+      const [videosResponse, prescriptionsResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/videos/list'),
+        fetch('http://localhost:8000/api/prescription/list')
+      ]);
+
+      const activities: ActivityItem[] = [];
+
+      // Process videos
+      if (videosResponse.ok) {
+        const videosData = await videosResponse.json();
 
         // Filter unwatched videos
-        const unwatched = data.videos.filter((v: any) => !v.watched);
+        const unwatched = videosData.videos.filter((v: any) => !v.watched);
         setUnwatchedVideos(unwatched);
 
-        // Generate recent activity from videos
-        const activities: ActivityItem[] = [];
-
         // Add activities for recently watched videos
-        data.videos
+        videosData.videos
           .filter((v: any) => v.watched)
           .slice(0, 3)
-          .forEach((v: any, index: number) => {
+          .forEach((v: any) => {
             activities.push({
-              id: index,
+              id: `video-${v.id}`,
               type: 'video_watched',
               title: `Watched: ${v.type}`,
               description: v.summary,
@@ -75,12 +82,12 @@ export default function PatientDashboard() {
           });
 
         // Add activities for new videos
-        data.videos
+        videosData.videos
           .filter((v: any) => !v.watched)
           .slice(0, 2)
-          .forEach((v: any, index: number) => {
+          .forEach((v: any) => {
             activities.push({
-              id: activities.length + index,
+              id: `video-new-${v.id}`,
               type: 'video_added',
               title: `New video: ${v.type}`,
               description: v.summary,
@@ -88,11 +95,55 @@ export default function PatientDashboard() {
               icon: <AlertCircle className="w-4 h-4 text-blue-500" />
             });
           });
-
-        setRecentActivity(activities);
       }
+
+      // Process prescriptions
+      if (prescriptionsResponse.ok) {
+        const prescriptionsData = await prescriptionsResponse.json();
+
+        // Add activities for read prescriptions
+        prescriptionsData.prescriptions
+          .filter((p: any) => p.read)
+          .slice(0, 2)
+          .forEach((p: any) => {
+            activities.push({
+              id: `prescription-read-${p.id}`,
+              type: 'prescription_read',
+              title: `Prescription reviewed`,
+              description: `${p.medications.length} medication${p.medications.length > 1 ? 's' : ''} from ${p.doctor_name}`,
+              timestamp: p.read_at ? new Date(p.read_at).toLocaleString() : '',
+              icon: <CheckCircle2 className="w-4 h-4 text-green-500" />,
+              medications: p.medications
+            });
+          });
+
+        // Add activities for new prescriptions
+        prescriptionsData.prescriptions
+          .filter((p: any) => !p.read)
+          .slice(0, 2)
+          .forEach((p: any) => {
+            activities.push({
+              id: `prescription-new-${p.id}`,
+              type: 'prescription_received',
+              title: `New prescription from ${p.doctor_name}`,
+              description: `${p.medications.length} medication${p.medications.length > 1 ? 's' : ''} prescribed`,
+              timestamp: new Date(p.created_at).toLocaleString(),
+              icon: <Pill className="w-4 h-4 text-blue-500" />,
+              medications: p.medications
+            });
+          });
+      }
+
+      // Sort activities by timestamp (most recent first)
+      activities.sort((a, b) => {
+        const dateA = new Date(a.timestamp);
+        const dateB = new Date(b.timestamp);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setRecentActivity(activities.slice(0, 8));
     } catch (error) {
-      console.error('Error fetching videos:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -189,8 +240,36 @@ export default function PatientDashboard() {
                   <div className="flex-1">
                     <h4 className="text-sm font-medium">{activity.title}</h4>
                     <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+
+                    {/* Show medications for prescription activities */}
+                    {(activity.type === 'prescription_received' || activity.type === 'prescription_read') && activity.medications && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {activity.medications.slice(0, 3).map((med, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {med}
+                          </Badge>
+                        ))}
+                        {activity.medications.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{activity.medications.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
                     <p className="text-xs text-muted-foreground mt-2">{activity.timestamp}</p>
                   </div>
+
+                  {/* Add action button for new prescriptions */}
+                  {activity.type === 'prescription_received' && (
+                    <Button
+                      onClick={() => router.push('/patient/prescriptions')}
+                      size="sm"
+                      variant="outline"
+                    >
+                      View
+                    </Button>
+                  )}
                 </div>
               ))
             )}

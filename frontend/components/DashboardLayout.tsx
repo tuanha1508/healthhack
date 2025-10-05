@@ -45,6 +45,7 @@ export default function DashboardLayout({ children, userType, userName = 'User' 
   const patientNavItems = [
     { name: 'Overview', href: '/patient', icon: BarChart3 },
     { name: 'Diagnostics', href: '/patient/diagnostics', icon: Activity },
+    { name: 'Prescriptions', href: '/patient/prescriptions', icon: Pill },
   ];
 
   const doctorNavItems = [
