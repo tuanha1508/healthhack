@@ -364,7 +364,7 @@ export default function LocalVideoPlayer({
       {transcript && transcript.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-semibold text-sm">Subtitles / Transcript</h3>
-          <ScrollArea className="h-48 border rounded-lg p-3 scrollbar-hide">
+          <div className="h-48 border rounded-lg p-3 overflow-y-auto scrollbar-hide">
             <div className="space-y-2">
               {transcript.map((item, index) => {
                 const itemTime = item.start ?? item.timestamp ?? 0;
@@ -377,19 +377,21 @@ export default function LocalVideoPlayer({
                     onClick={() => handleTranscriptClick(item)}
                     className={`block text-left w-full p-2 rounded transition-colors ${
                       isActive
-                        ? 'bg-primary/20 text-primary'
-                        : 'hover:bg-secondary'
+                        ? 'bg-primary/5 text-primary'
+                        : ''
                     }`}
                   >
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(itemTime)}
-                    </span>
-                    <p className="text-sm">{item.text}</p>
+                    <div className="flex flex-col justify-center">
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(itemTime)}
+                      </span>
+                      <p className="text-sm">{item.text}</p>
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       )}
     </div>
