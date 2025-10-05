@@ -333,7 +333,7 @@ export default function PatientsPage() {
 
         {/* Patient Details Card */}
         <Card>
-          <div className="p-6 border-b">
+          <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-xl font-semibold">{currentPatient.name}</h2>
@@ -348,23 +348,6 @@ export default function PatientsPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                <p className="text-2xl font-bold">{currentPatient.videosReceived}</p>
-                <p className="text-xs text-muted-foreground">Videos Sent</p>
-              </div>
-              <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                <p className="text-2xl font-bold">{currentPatient.completionRate}%</p>
-                <p className="text-xs text-muted-foreground">Completion Rate</p>
-              </div>
-              <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                <p className="text-sm font-medium mt-1">{currentPatient.lastVisit}</p>
-                <p className="text-xs text-muted-foreground">Last Visit</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
             <h3 className="font-semibold mb-4">Video Instruction History</h3>
             <ScrollArea className="h-[400px]">
               <div className="space-y-3">
