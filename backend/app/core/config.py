@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ]
 
     # Groq API Settings
-    GROQ_API_KEY: str = "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"
+    GROQ_API_KEY: str = ""  # Will be loaded from .env file
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Server Settings
