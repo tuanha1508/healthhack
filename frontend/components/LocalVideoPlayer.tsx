@@ -21,7 +21,6 @@ interface LocalVideoPlayerProps {
   isPlaying: boolean;
   onTimeUpdate: (time: number) => void;
   onPlayPause: (playing: boolean) => void;
-  onDurationChange?: (duration: number) => void;
 }
 
 export default function LocalVideoPlayer({
@@ -30,17 +29,20 @@ export default function LocalVideoPlayer({
   currentTime,
   isPlaying,
   onTimeUpdate,
-  onPlayPause,
-  onDurationChange
+  onPlayPause
 }: LocalVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [buffered, setBuffered] = useState(0);
   const [currentSubtitle, setCurrentSubtitle] = useState<string>('');
   const [videoError, setVideoError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate duration from transcript
+  const duration = transcript && transcript.length > 0
+    ? Math.max(...transcript.map(t => t.end || t.timestamp || 0))
+    : 0;
 
   // Update video playback based on isPlaying prop
   useEffect(() => {
@@ -90,37 +92,17 @@ export default function LocalVideoPlayer({
     };
 
     const handleLoadedMetadata = () => {
-      console.log('Video metadata loaded, duration:', video.duration);
-      setDuration(video.duration);
-      if (onDurationChange) {
-        onDurationChange(video.duration);
-      }
+      console.log('Video metadata loaded');
     };
 
     const handleCanPlay = () => {
-      console.log('Video can play, duration:', video.duration);
-      if (video.duration && video.duration !== Infinity) {
-        setDuration(video.duration);
-        if (onDurationChange) {
-          onDurationChange(video.duration);
-        }
-      }
-    };
-
-    const handleDurationChange = () => {
-      console.log('Duration changed:', video.duration);
-      if (video.duration && video.duration !== Infinity) {
-        setDuration(video.duration);
-        if (onDurationChange) {
-          onDurationChange(video.duration);
-        }
-      }
+      console.log('Video can play');
     };
 
     const handleProgress = () => {
-      if (video.buffered.length > 0) {
+      if (video.buffered.length > 0 && duration > 0) {
         const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        setBuffered((bufferedEnd / video.duration) * 100);
+        setBuffered((bufferedEnd / duration) * 100);
       }
     };
 
@@ -189,7 +171,6 @@ export default function LocalVideoPlayer({
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('durationchange', handleDurationChange);
     video.addEventListener('progress', handleProgress);
     video.addEventListener('loadstart', handleLoadStart);
     video.addEventListener('canplaythrough', handleCanPlayThrough);
@@ -202,7 +183,6 @@ export default function LocalVideoPlayer({
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('progress', handleProgress);
       video.removeEventListener('loadstart', handleLoadStart);
       video.removeEventListener('canplaythrough', handleCanPlayThrough);
@@ -211,7 +191,7 @@ export default function LocalVideoPlayer({
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
     };
-  }, [transcript, onTimeUpdate, onDurationChange]);
+  }, [transcript, onTimeUpdate, duration]);
 
   const handlePlayPause = () => {
     onPlayPause(!isPlaying);
@@ -271,7 +251,7 @@ export default function LocalVideoPlayer({
   const fullVideoUrl = isLocalVideo ? `http://localhost:8000${videoUrl}` : videoUrl;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6">
       {/* Error Alert */}
       {videoError && (
         <Alert variant="destructive">
@@ -384,7 +364,7 @@ export default function LocalVideoPlayer({
       {transcript && transcript.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-semibold text-sm">Subtitles / Transcript</h3>
-          <ScrollArea className="h-48 border rounded-lg p-3">
+          <ScrollArea className="h-48 border rounded-lg p-3 scrollbar-hide">
             <div className="space-y-2">
               {transcript.map((item, index) => {
                 const itemTime = item.start ?? item.timestamp ?? 0;

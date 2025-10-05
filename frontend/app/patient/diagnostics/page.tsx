@@ -94,6 +94,12 @@ export default function DiagnosticsPage() {
     setCurrentTime(0);
     setIsPlaying(false);
 
+    // Calculate video duration from transcript
+    const calculatedDuration = diagnostic.transcript && diagnostic.transcript.length > 0
+      ? Math.max(...diagnostic.transcript.map(t => t.end || t.timestamp || 0))
+      : 0;
+    setVideoDuration(calculatedDuration);
+
     // Mark video as watched
     try {
       await fetch(`http://localhost:8000/api/videos/${diagnostic.id}/watched`, {
@@ -298,50 +304,44 @@ export default function DiagnosticsPage() {
 
       {/* Modal for viewing video */}
       <Dialog open={!!selectedDiagnostic} onOpenChange={() => setSelectedDiagnostic(null)}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] overflow-y-auto scrollbar-hide">
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] overflow-y-auto scrollbar-hide pb-12">
           <DialogHeader>
             <DialogTitle>
               {selectedDiagnostic?.type} - {selectedDiagnostic?.date}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex gap-4 h-[calc(90vh-8rem)]">
-            {/* Left side - Video Player */}
-            <div className="w-[70%]">
-              {selectedDiagnostic?.video_url && (
-                selectedDiagnostic.isLocalVideo ? (
-                  <LocalVideoPlayer
-                    videoUrl={selectedDiagnostic.video_url}
-                    transcript={selectedDiagnostic.transcript || []}
-                    currentTime={currentTime}
-                    isPlaying={isPlaying}
-                    onTimeUpdate={setCurrentTime}
-                    onPlayPause={handlePlayPause}
-                    onDurationChange={setVideoDuration}
-                  />
-                ) : (
-                  <YouTubePlayer
-                    videoUrl={selectedDiagnostic.video_url}
-                    transcript={selectedDiagnostic.transcript || []}
-                    currentTime={currentTime}
-                    isPlaying={isPlaying}
-                    onTimeUpdate={setCurrentTime}
-                    onPlayPause={handlePlayPause}
-                  />
-                )
-              )}
-            </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4 h-[calc(90vh-8rem)]">
+              {/* Left side - Video Player */}
+              <div className="w-[70%]">
+                {selectedDiagnostic?.video_url && (
+                  selectedDiagnostic.isLocalVideo ? (
+                    <LocalVideoPlayer
+                      videoUrl={selectedDiagnostic.video_url}
+                      transcript={selectedDiagnostic.transcript || []}
+                      currentTime={currentTime}
+                      isPlaying={isPlaying}
+                      onTimeUpdate={setCurrentTime}
+                      onPlayPause={handlePlayPause}
+                    />
+                  ) : (
+                    <YouTubePlayer
+                      videoUrl={selectedDiagnostic.video_url}
+                      transcript={selectedDiagnostic.transcript || []}
+                      currentTime={currentTime}
+                      isPlaying={isPlaying}
+                      onTimeUpdate={setCurrentTime}
+                      onPlayPause={handlePlayPause}
+                    />
+                  )
+                )}
+              </div>
 
-            {/* Right side - Chat */}
-            <div className="w-[30%] flex flex-col border rounded-lg h-full overflow-hidden">
+              {/* Right side - Chat */}
+              <div className="w-[30%] flex flex-col border rounded-lg h-full overflow-hidden">
               <div className="p-4 border-b flex-shrink-0">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-5 h-5" />
-                  <h3 className="font-semibold">AI Assistant</h3>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Ask questions about the video content
-                </p>
+                <h3 className="font-semibold">AI Assistant</h3>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 min-h-0 scrollbar-hide">
@@ -388,6 +388,7 @@ export default function DiagnosticsPage() {
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>
+              </div>
               </div>
             </div>
           </div>
