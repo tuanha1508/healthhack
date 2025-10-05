@@ -99,7 +99,7 @@ export default function DoctorDashboard() {
 
   const getActivityIcon = (type: string) => {
     if (type === 'prescription') {
-      return <Pill className="h-5 w-5 text-blue-600 mt-0.5" />;
+      return null;
     }
     return <FileVideo className="h-5 w-5 text-muted-foreground mt-0.5" />;
   };
@@ -137,16 +137,11 @@ export default function DoctorDashboard() {
                           <div className="mt-1">
                             <p className="text-xs text-muted-foreground mb-1">Medications:</p>
                             <div className="flex flex-wrap gap-1">
-                              {activity.medications.slice(0, 3).map((med, idx) => (
+                              {activity.medications.map((med, idx) => (
                                 <Badge key={idx} variant="outline" className="text-xs">
-                                  {med}
+                                  {med.charAt(0).toUpperCase() + med.slice(1)}
                                 </Badge>
                               ))}
-                              {activity.medications.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{activity.medications.length - 3} more
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         )}
@@ -177,7 +172,7 @@ export default function DoctorDashboard() {
                       }
                       className={
                         activity.status === 'watched' || activity.status === 'read' ? 'bg-green-500' :
-                        activity.status === 'unread' ? 'bg-blue-600' : ''
+                        activity.status === 'unread' ? 'bg-blue-600 text-white' : ''
                       }
                     >
                       {activity.status}

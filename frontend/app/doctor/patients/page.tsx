@@ -466,8 +466,7 @@ export default function PatientsPage() {
                   {prescriptions.map((prescription) => (
                     <div key={prescription.id} className="p-4 border rounded-lg">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-start gap-3">
-                          <Pill className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
                           <div>
                             <p className="font-medium">
                               {prescription.medications.length} Medication{prescription.medications.length > 1 ? 's' : ''} Prescribed
@@ -508,11 +507,10 @@ export default function PatientsPage() {
                       {/* Medications List */}
                       <div className="mt-3 bg-gray-50 rounded-lg p-3">
                         <p className="text-xs font-medium text-muted-foreground mb-2">Medications:</p>
-                        <ul className="space-y-1">
+                        <ul className="space-y-1 list-none">
                           {prescription.medications.map((med, idx) => (
-                            <li key={idx} className="text-sm flex items-center gap-2">
-                              <span className="w-1 h-1 bg-blue-600 rounded-full"></span>
-                              {med}
+                            <li key={idx} className="text-sm">
+                              - {med.charAt(0).toUpperCase() + med.slice(1)}
                             </li>
                           ))}
                         </ul>

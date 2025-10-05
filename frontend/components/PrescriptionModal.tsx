@@ -638,7 +638,7 @@ export default function PrescriptionModal({
                     <div key={idx} className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">{med}</span>
+                        <span className="font-medium">- {med.charAt(0).toUpperCase() + med.slice(1)}</span>
                       </div>
                       <Button
                         variant="ghost"
@@ -679,7 +679,7 @@ export default function PrescriptionModal({
                             </Badge>
                           )}
                         </div>
-                        {prescriptions.includes(result.medication) && (
+                        {prescriptions.some(med => med.toLowerCase() === result.medication.toLowerCase()) && (
                           <Badge variant="outline" className="bg-green-50">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Added to Scribe
@@ -720,11 +720,11 @@ export default function PrescriptionModal({
                           {result.can_prescribe ? (
                             <Button
                               onClick={() => handleAddToScribe(result.medication)}
-                              disabled={prescriptions.includes(result.medication)}
+                              disabled={prescriptions.some(med => med.toLowerCase() === result.medication.toLowerCase())}
                               className="w-full"
                             >
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              {prescriptions.includes(result.medication) ? 'Added to Scribe' : 'Add to Scribe'}
+                              {prescriptions.some(med => med.toLowerCase() === result.medication.toLowerCase()) ? 'Added to Scribe' : 'Add to Scribe'}
                             </Button>
                           ) : (
                             result.alternatives && result.alternatives.length > 0 && (
@@ -777,12 +777,12 @@ export default function PrescriptionModal({
                                             e.stopPropagation();
                                             handleAddToScribe(alt.name);
                                           }}
-                                          disabled={prescriptions.includes(alt.name)}
+                                          disabled={prescriptions.some(med => med.toLowerCase() === alt.name.toLowerCase())}
                                           className="w-full mt-3"
                                           size="sm"
                                         >
                                           <CheckCircle className="h-4 w-4 mr-2" />
-                                          {prescriptions.includes(alt.name) ? 'Added to Scribe' : 'Add to Scribe'}
+                                          {prescriptions.some(med => med.toLowerCase() === alt.name.toLowerCase()) ? 'Added to Scribe' : 'Add to Scribe'}
                                         </Button>
                                       )}
                                     </div>
