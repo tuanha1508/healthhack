@@ -248,7 +248,7 @@ export default function LocalVideoPlayer({
 
   // Determine if this is a local video or external URL
   const isLocalVideo = videoUrl.startsWith('/api/videos/');
-  const fullVideoUrl = isLocalVideo ? `https://57315631503a.ngrok-free.app${videoUrl}` : videoUrl;
+  const fullVideoUrl = isLocalVideo ? `http://localhost:8000${videoUrl}` : videoUrl;
 
   return (
     <div className="space-y-4 pb-6">

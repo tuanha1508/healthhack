@@ -30,8 +30,8 @@ export default function DoctorDashboard() {
     try {
       // Fetch both videos and prescriptions
       const [videosResponse, prescriptionsResponse] = await Promise.all([
-        fetch('https://57315631503a.ngrok-free.app/api/videos/list'),
-        fetch('https://57315631503a.ngrok-free.app/api/prescription/list')
+        fetch('http://localhost:8000/api/videos/list'),
+        fetch('http://localhost:8000/api/prescription/list')
       ]);
 
       const allActivities: Activity[] = [];

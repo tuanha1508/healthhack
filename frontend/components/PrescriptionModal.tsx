@@ -156,7 +156,7 @@ export default function PrescriptionModal({
 
   const analyzeWithAI = async (medication: string, apiResponse: any): Promise<MedicationResult> => {
     try {
-      const response = await fetch('https://57315631503a.ngrok-free.app/api/prescription/analyze-prescription', {
+      const response = await fetch('http://localhost:8000/api/prescription/analyze-prescription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -811,7 +811,7 @@ export default function PrescriptionModal({
                 variant="default"
                 onClick={async () => {
                   try {
-                    const response = await fetch('https://57315631503a.ngrok-free.app/api/prescription/finalize', {
+                    const response = await fetch('http://localhost:8000/api/prescription/finalize', {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',

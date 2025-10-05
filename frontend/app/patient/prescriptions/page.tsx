@@ -38,7 +38,7 @@ export default function PrescriptionsPage() {
 
   const fetchPrescriptions = async () => {
     try {
-      const response = await fetch('https://57315631503a.ngrok-free.app/api/prescription/list');
+      const response = await fetch('http://localhost:8000/api/prescription/list');
       if (response.ok) {
         const data = await response.json();
         setPrescriptions(data.prescriptions);
@@ -52,7 +52,7 @@ export default function PrescriptionsPage() {
 
   const markAsRead = async (prescriptionId: string) => {
     try {
-      const response = await fetch(`https://57315631503a.ngrok-free.app/api/prescription/${prescriptionId}/read`, {
+      const response = await fetch(`http://localhost:8000/api/prescription/${prescriptionId}/read`, {
         method: 'PUT'
       });
       if (response.ok) {

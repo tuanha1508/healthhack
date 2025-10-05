@@ -85,7 +85,7 @@ export default function PatientsPage() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch('https://57315631503a.ngrok-free.app/api/videos/list');
+      const response = await fetch('http://localhost:8000/api/videos/list');
       if (response.ok) {
         const data = await response.json();
         // Transform for doctor's view
@@ -106,7 +106,7 @@ export default function PatientsPage() {
 
   const fetchPrescriptions = async () => {
     try {
-      const response = await fetch('https://57315631503a.ngrok-free.app/api/prescription/list');
+      const response = await fetch('http://localhost:8000/api/prescription/list');
       if (response.ok) {
         const data = await response.json();
         setPrescriptions(data.prescriptions);
@@ -266,7 +266,7 @@ export default function PatientsPage() {
       formData.append('audio', audioBlob, 'recording.webm');
 
       // Call backend API on port 8000
-      const response = await fetch('https://57315631503a.ngrok-free.app/api/transcribe/', {
+      const response = await fetch('http://localhost:8000/api/transcribe/', {
         method: 'POST',
         body: formData
       });
@@ -310,7 +310,7 @@ export default function PatientsPage() {
         formData.append('subtitles', JSON.stringify(subtitles));
 
         // Upload video to backend
-        const response = await fetch('https://57315631503a.ngrok-free.app/api/videos/upload', {
+        const response = await fetch('http://localhost:8000/api/videos/upload', {
           method: 'POST',
           body: formData
         });
