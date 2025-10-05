@@ -2,7 +2,7 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Card } from '@/components/Card';
+import { Card, StatCard } from '@/components/Card';
 import { Users, Video, Calendar, TrendingUp } from 'lucide-react';
 
 export default function DoctorDashboard() {
@@ -16,28 +16,32 @@ export default function DoctorDashboard() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card
+          <StatCard
             title="Current Patient"
             value="1"
-            description="Active"
+            change="Active"
+            changeType="neutral"
             icon={<Users className="h-4 w-4" />}
           />
-          <Card
+          <StatCard
             title="Videos Sent"
             value="23"
-            description="Total"
+            change="Total"
+            changeType="neutral"
             icon={<Video className="h-4 w-4" />}
           />
-          <Card
+          <StatCard
             title="Next Review"
             value="Dec 8"
-            description="Scheduled"
+            change="Scheduled"
+            changeType="neutral"
             icon={<Calendar className="h-4 w-4" />}
           />
-          <Card
+          <StatCard
             title="Completion Rate"
             value="92%"
-            description="Patient engagement"
+            change="Patient engagement"
+            changeType="positive"
             icon={<TrendingUp className="h-4 w-4" />}
           />
         </div>
