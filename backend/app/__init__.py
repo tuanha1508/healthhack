@@ -1,0 +1,1 @@
+# HealthHack Backend Application

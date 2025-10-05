@@ -2,7 +2,10 @@
 
 # dependencies
 /node_modules
-/.pnp
+/frontend/node_modules
+/backend/venv
+/__pycache__
+*.pyc
 .pnp.*
 .yarn/*
 !.yarn/patches
