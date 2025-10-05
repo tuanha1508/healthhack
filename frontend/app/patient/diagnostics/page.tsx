@@ -89,10 +89,27 @@ export default function DiagnosticsPage() {
   };
 
   // Handle diagnostic selection
-  const handleSelectDiagnostic = (diagnostic: Diagnostic) => {
+  const handleSelectDiagnostic = async (diagnostic: Diagnostic) => {
     setSelectedDiagnostic(diagnostic);
     setCurrentTime(0);
     setIsPlaying(false);
+
+    // Mark video as watched
+    try {
+      await fetch(`http://localhost:8000/api/videos/${diagnostic.id}/watched`, {
+        method: 'POST',
+      });
+      // Update local state to reflect watched status
+      setDiagnosticHistory(prev =>
+        prev.map(d =>
+          d.id === diagnostic.id
+            ? { ...d, status: 'watched' as const }
+            : d
+        )
+      );
+    } catch (error) {
+      console.error('Error marking video as watched:', error);
+    }
 
     // Reset messages
     setMessages([
@@ -179,6 +196,10 @@ export default function DiagnosticsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'watched':
+        return 'default';
+      case 'unwatched':
+        return 'secondary';
       case 'completed':
         return 'default';
       case 'pending':
@@ -186,7 +207,18 @@ export default function DiagnosticsPage() {
       case 'in-progress':
         return 'outline';
       default:
-        return 'default';
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'watched':
+        return 'Watched';
+      case 'unwatched':
+        return 'New';
+      default:
+        return status;
     }
   };
 
@@ -239,7 +271,7 @@ export default function DiagnosticsPage() {
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <p className="font-medium">{diagnostic.date}</p>
                       <Badge variant={getStatusColor(diagnostic.status)}>
-                        {diagnostic.status}
+                        {getStatusLabel(diagnostic.status)}
                       </Badge>
                     </div>
                     <div className="mt-2 ml-7">

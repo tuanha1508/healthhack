@@ -21,7 +21,8 @@ import {
   Send,
   StopCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 interface VideoInstruction {
@@ -77,8 +78,8 @@ export default function PatientsPage() {
           title: video.type.replace('Doctor Instruction: ', ''),
           dateSent: video.date,
           duration: '0:00', // Duration would need to be calculated
-          status: video.status as 'watched' | 'unwatched' | 'in-progress',
-          completedAt: video.completedAt
+          status: video.watched ? 'watched' : 'unwatched',
+          completedAt: video.watched_at ? new Date(video.watched_at).toLocaleString() : undefined
         }));
         setVideoInstructions(videos);
       }
@@ -339,13 +340,23 @@ export default function PatientsPage() {
                 <h2 className="text-xl font-semibold">{currentPatient.name}</h2>
                 <p className="text-sm text-muted-foreground mt-1">{currentPatient.diagnosis}</p>
               </div>
-              <Button
-                onClick={() => setIsRecordingModalOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Record New Instruction
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={fetchVideos}
+                  variant="outline"
+                  size="icon"
+                  title="Refresh video list"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => setIsRecordingModalOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Record New Instruction
+                </Button>
+              </div>
             </div>
 
             <h3 className="font-semibold mb-4">Video Instruction History</h3>
@@ -370,7 +381,7 @@ export default function PatientsPage() {
                           </div>
                           {video.completedAt && (
                             <p className="text-xs text-green-600 mt-1">
-                              Completed: {video.completedAt}
+                              Watched: {video.completedAt}
                             </p>
                           )}
                         </div>
@@ -381,8 +392,9 @@ export default function PatientsPage() {
                           video.status === 'in-progress' ? 'secondary' :
                           'outline'
                         }
+                        className={video.status === 'watched' ? 'bg-green-500 hover:bg-green-600' : ''}
                       >
-                        {video.status}
+                        {video.status === 'watched' ? 'Watched' : 'Not Watched'}
                       </Badge>
                     </div>
                   </div>

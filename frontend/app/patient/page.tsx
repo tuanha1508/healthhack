@@ -1,30 +1,122 @@
 "use client";
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Card, StatCard } from '@/components/Card';
+import { Card } from '@/components/Card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Heart,
-  Activity,
-  Thermometer,
-  Weight,
+  Video,
   Calendar,
   Clock,
-  Pill,
-  FileText,
-  TrendingUp
+  Activity,
+  CheckCircle2,
+  Circle,
+  PlayCircle,
+  AlertCircle
 } from 'lucide-react';
 
+interface VideoItem {
+  id: string | number;
+  date: string;
+  time: string;
+  type: string;
+  summary: string;
+  watched: boolean;
+}
+
+interface ActivityItem {
+  id: number;
+  type: 'video_watched' | 'video_added' | 'assessment_completed';
+  title: string;
+  description: string;
+  timestamp: string;
+  icon: React.ReactNode;
+}
+
 export default function PatientDashboard() {
-  // Cognitive metrics (will be loaded from database later)
-  const cognitiveMetrics = {
-    lastAssessment: '-',
-    nextAssessment: '-',
-    voiceAnalysisCount: '0',
-    consistencyScore: '-'
+  const router = useRouter();
+  const [unwatchedVideos, setUnwatchedVideos] = useState<VideoItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchVideosAndActivity();
+  }, []);
+
+  const fetchVideosAndActivity = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/videos/list');
+      if (response.ok) {
+        const data = await response.json();
+
+        // Filter unwatched videos
+        const unwatched = data.videos.filter((v: any) => !v.watched);
+        setUnwatchedVideos(unwatched);
+
+        // Generate recent activity from videos
+        const activities: ActivityItem[] = [];
+
+        // Add activities for recently watched videos
+        data.videos
+          .filter((v: any) => v.watched)
+          .slice(0, 3)
+          .forEach((v: any, index: number) => {
+            activities.push({
+              id: index,
+              type: 'video_watched',
+              title: `Watched: ${v.type}`,
+              description: v.summary,
+              timestamp: v.watched_at || '2 hours ago',
+              icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
+            });
+          });
+
+        // Add activities for new videos
+        data.videos
+          .filter((v: any) => !v.watched)
+          .slice(0, 2)
+          .forEach((v: any, index: number) => {
+            activities.push({
+              id: activities.length + index,
+              type: 'video_added',
+              title: `New video: ${v.type}`,
+              description: v.summary,
+              timestamp: v.date,
+              icon: <AlertCircle className="w-4 h-4 text-blue-500" />
+            });
+          });
+
+        setRecentActivity(activities);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const markAsWatched = async (videoId: string | number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/videos/${videoId}/watched`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        // Refresh the data
+        fetchVideosAndActivity();
+      }
+    } catch (error) {
+      console.error('Error marking video as watched:', error);
+    }
+  };
+
+  const handleWatchVideo = (videoId: string | number) => {
+    // Mark as watched and navigate to diagnostics page
+    markAsWatched(videoId);
+    router.push('/patient/diagnostics');
   };
 
   return (
@@ -33,89 +125,75 @@ export default function PatientDashboard() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">Overview</h1>
-          <p className="text-muted-foreground mt-2">Your cognitive health at a glance</p>
+          <p className="text-muted-foreground mt-2">Your recent activity and new content</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Voice Analyses"
-            value={cognitiveMetrics.voiceAnalysisCount}
-            change="This month"
-            changeType="neutral"
-            icon={<Activity className="w-6 h-6 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Consistency Score"
-            value={cognitiveMetrics.consistencyScore}
-            change="Stable pattern"
-            changeType="positive"
-            icon={<TrendingUp className="w-6 h-6 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Last Assessment"
-            value={cognitiveMetrics.lastAssessment}
-            change="Completed"
-            changeType="positive"
-            icon={<Calendar className="w-6 h-6 text-muted-foreground" />}
-          />
-          <StatCard
-            title="Next Assessment"
-            value={cognitiveMetrics.nextAssessment}
-            change="Scheduled"
-            changeType="neutral"
-            icon={<Clock className="w-6 h-6 text-muted-foreground" />}
-          />
-        </div>
+        {/* Unwatched Videos Section */}
+        {unwatchedVideos.length > 0 && (
+          <Card title="New Videos from Your Doctor" subtitle="Videos you haven't watched yet">
+            <div className="space-y-3">
+              {unwatchedVideos.map((video) => (
+                <div
+                  key={video.id}
+                  className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <Circle className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium">{video.type}</h4>
+                        <Badge variant="secondary" className="text-xs">New</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{video.summary}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {video.date}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {video.time}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleWatchVideo(video.id)}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    Watch Now
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
-        {/* Cognitive Health Summary */}
-        <Card title="Cognitive Health Summary" subtitle="Current status and trends">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Voice Pattern</span>
-                <Badge variant="default" className="text-xs">Stable</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">Consistent speech patterns detected</p>
-              <Progress value={85} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">Last analyzed: Nov 8, 2024</p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Memory Function</span>
-                <Badge variant="default" className="text-xs">Normal</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">No decline detected</p>
-              <Progress value={92} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">Last tested: Nov 5, 2024</p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Response Time</span>
-                <Badge variant="secondary" className="text-xs">Monitored</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">Within expected range</p>
-              <Progress value={78} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">Ongoing monitoring</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card title="Quick Actions" subtitle="Common tasks">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Activity className="w-8 h-8" />
-              <span>Start Voice Recording</span>
-            </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <FileText className="w-8 h-8" />
-              <span>View Reports</span>
-            </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Calendar className="w-8 h-8" />
-              <span>Schedule Assessment</span>
-            </Button>
+        {/* Recent Activity */}
+        <Card title="Recent Activity" subtitle="Your latest interactions and updates">
+          <div className="space-y-4">
+            {recentActivity.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No recent activity. Check back later for updates.
+              </p>
+            ) : (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-3 p-3 hover:bg-accent/50 rounded-lg transition-colors">
+                  <div className="mt-1">
+                    {activity.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium">{activity.title}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{activity.timestamp}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </div>

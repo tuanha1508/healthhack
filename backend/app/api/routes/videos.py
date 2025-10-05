@@ -130,6 +130,8 @@ async def list_videos():
             "time": datetime.fromisoformat(video["uploaded_at"]).strftime("%I:%M %p"),
             "type": f"{video['type']}: {video['title']}",
             "status": video["status"],
+            "watched": video.get("watched", False),
+            "watched_at": video.get("watched_at", None),
             "video_url": f"/api/videos/stream/{video['id']}",
             "summary": video["description"],
             "transcript": video["subtitles"]
@@ -278,4 +280,49 @@ async def update_video_status(video_id: str, status: str):
     return JSONResponse(content={
         "success": True,
         "message": f"Video status updated to {status}"
+    })
+
+@router.post("/{video_id}/watched")
+async def mark_video_watched(video_id: str):
+    """
+    Mark a video as watched
+    """
+    video_data = next((v for v in video_storage if v["id"] == video_id), None)
+
+    if not video_data:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    video_data["watched"] = True
+    video_data["watched_at"] = datetime.now().isoformat()
+    video_data["status"] = "watched"
+
+    # Save changes to file
+    save_video_storage()
+
+    return JSONResponse(content={
+        "success": True,
+        "message": "Video marked as watched",
+        "watched_at": video_data["watched_at"]
+    })
+
+@router.post("/{video_id}/unwatch")
+async def mark_video_unwatched(video_id: str):
+    """
+    Mark a video as unwatched
+    """
+    video_data = next((v for v in video_storage if v["id"] == video_id), None)
+
+    if not video_data:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    video_data["watched"] = False
+    video_data.pop("watched_at", None)
+    video_data["status"] = "unwatched"
+
+    # Save changes to file
+    save_video_storage()
+
+    return JSONResponse(content={
+        "success": True,
+        "message": "Video marked as unwatched"
     })
