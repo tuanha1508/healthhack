@@ -52,8 +52,8 @@ export default function PatientDashboard() {
     try {
       // Fetch both videos and prescriptions
       const [videosResponse, prescriptionsResponse] = await Promise.all([
-        fetch('http://localhost:8000/api/videos/list'),
-        fetch('http://localhost:8000/api/prescription/list')
+        fetch('https://57315631503a.ngrok-free.app/api/videos/list'),
+        fetch('https://57315631503a.ngrok-free.app/api/prescription/list')
       ]);
 
       const activities: ActivityItem[] = [];
@@ -151,7 +151,7 @@ export default function PatientDashboard() {
 
   const markAsWatched = async (videoId: string | number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/videos/${videoId}/watched`, {
+      const response = await fetch(`https://57315631503a.ngrok-free.app/api/videos/${videoId}/watched`, {
         method: 'POST',
       });
 

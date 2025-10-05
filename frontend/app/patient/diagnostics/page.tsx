@@ -64,7 +64,7 @@ export default function DiagnosticsPage() {
   const fetchVideos = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/videos/list');
+      const response = await fetch('https://57315631503a.ngrok-free.app/api/videos/list');
       if (response.ok) {
         const data = await response.json();
         // Transform the transcript format if needed
@@ -102,7 +102,7 @@ export default function DiagnosticsPage() {
 
     // Mark video as watched
     try {
-      await fetch(`http://localhost:8000/api/videos/${diagnostic.id}/watched`, {
+      await fetch(`https://57315631503a.ngrok-free.app/api/videos/${diagnostic.id}/watched`, {
         method: 'POST',
       });
       // Update local state to reflect watched status
@@ -148,7 +148,7 @@ export default function DiagnosticsPage() {
 
       try {
         // Call the Groq API through the backend
-        const response = await fetch('http://localhost:8000/api/chat/', {
+        const response = await fetch('https://57315631503a.ngrok-free.app/api/chat/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

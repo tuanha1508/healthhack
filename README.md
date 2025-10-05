@@ -1,6 +1,6 @@
-# HealthHack - Alzheimer's Detection & Patient Care System
+# HealthHack - AI-Powered Pharmacogenomics & 24/7 Distance Care Platform
 
-A full-stack application for Alzheimer's detection and patient care, featuring AI-powered medical instruction assistance.
+A comprehensive healthcare platform that combines **pharmacogenomics-based drug safety analysis** with **24/7 distance care capabilities**. The system helps doctors prescribe medications safely by analyzing genetic variants to detect potential adverse drug reactions, while enabling continuous patient support through AI-powered video instructions and real-time assistance.
 
 ## Project Structure
 
@@ -24,12 +24,35 @@ healthhack/
 └── README.md
 ```
 
-## Features
+## Key Features
 
-- **Patient Dashboard**: Interactive dashboard for patients to view their diagnostics
-- **Medical Video Instructions**: Simulated medical instruction videos with synchronized subtitles
-- **AI Chat Assistant**: Context-aware AI assistant powered by Groq that answers questions based on video content
-- **Diagnostic History**: Complete history of patient assessments and results
+### 🧬 Pharmacogenomics-Based Drug Safety
+- **Genetic Variant Analysis**: Supports both rsID + Genotype and Gene + Star Allele formats
+- **Adverse Drug Reaction Detection**: AI-powered analysis identifies potential drug-gene interactions
+- **Risk Assessment**: Provides Low/Moderate/High risk levels with detailed evidence
+- **Alternative Medication Suggestions**: Recommends safer alternatives when genetic variants indicate high risk
+- **Multi-Format Input**: Upload genetic data via CSV/PDF or manual entry
+- **Personalized Prescriptions**: Considers patient context (age, sex, ancestry, comorbidities, allergies)
+
+### 🏥 24/7 Distance Care Platform
+- **Video-Based Medical Instructions**: Doctors record personalized instruction videos for patients
+- **Automatic Speech-to-Text**: Real-time transcription with editable subtitles (YouTube-style)
+- **Anytime Access**: Patients can review medical instructions 24/7 from home
+- **AI Medical Assistant**: Context-aware chatbot answers patient questions based on video content
+- **Progress Tracking**: Monitors which videos patients have watched and when
+- **Prescription Management**: Digital prescription delivery with read receipts
+
+### 👨‍⚕️ Doctor Portal
+- **Patient Management**: Centralized view of all patient activities
+- **Video Recording**: Record and send medical instructions with camera integration
+- **Prescription Workflow**: Analyze genetic variants and prescribe medications safely
+- **Activity Dashboard**: Track patient engagement with videos and prescriptions
+
+### 👤 Patient Portal
+- **Medical Video Library**: Access all doctor instructions with AI assistance
+- **Prescription History**: View and download current medications
+- **Interactive Learning**: Pause videos anytime to ask AI questions
+- **Privacy-Focused**: All data stays within the secure platform
 
 ## Tech Stack
 
@@ -43,8 +66,9 @@ healthhack/
 ### Backend
 - Python 3.8+
 - FastAPI
-- Groq SDK (Llama 3.3 70B model)
+- Groq SDK (Llama 3.3 70B for chat, Whisper for transcription)
 - Pydantic for data validation
+- Pharmacogenomics API Integration (EpiRisk MSCS)
 
 ## Prerequisites
 
@@ -97,14 +121,52 @@ pnpm dev
 
 The frontend will start on http://localhost:3000
 
+### Important Note for Local Development
+
+**The frontend is currently configured to use the ngrok URL (`https://57315631503a.ngrok-free.app/`) for API requests.**
+
+If you're running this project **locally**, you need to update all API endpoint URLs in the frontend code from:
+```
+https://57315631503a.ngrok-free.app/
+```
+to:
+```
+http://localhost:8000
+```
+
+Files that need to be updated:
+- `frontend/components/PrescriptionModal.tsx`
+- `frontend/components/LocalVideoPlayer.tsx`
+- `frontend/app/patient/page.tsx`
+- `frontend/app/patient/prescriptions/page.tsx`
+- `frontend/app/patient/diagnostics/page.tsx`
+- `frontend/app/doctor/page.tsx`
+- `frontend/app/doctor/patients/page.tsx`
+
+You can use a find-and-replace to change all instances of `https://57315631503a.ngrok-free.app` to `http://localhost:8000`.
+
 ## API Endpoints
 
 ### Backend API (http://localhost:8000)
 
+#### Video Management
+- `POST /api/videos/upload` - Upload doctor instruction videos
+- `GET /api/videos/list` - Get all videos
+- `POST /api/videos/{id}/watched` - Mark video as watched
+- `GET /api/videos/stream/{filename}` - Stream video files
+
+#### Prescription & Pharmacogenomics
+- `POST /api/prescription/analyze-prescription` - AI analysis of drug-gene interactions
+- `POST /api/prescription/finalize` - Create and send prescription to patient
+- `GET /api/prescription/list` - Get all prescriptions
+- `PUT /api/prescription/{id}/read` - Mark prescription as read
+
+#### AI Services
+- `POST /api/chat/` - AI chat assistant for video questions
+- `POST /api/transcribe/` - Speech-to-text transcription (Groq Whisper)
+
+#### Health Check
 - `GET /` - API health check
-- `POST /api/chat/` - AI chat endpoint
-- `GET /api/diagnostics/history` - Get diagnostic history
-- `GET /api/diagnostics/{id}` - Get specific diagnostic
 
 ### API Documentation
 
@@ -129,34 +191,93 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ## Usage
 
-1. Navigate to http://localhost:3000
-2. Go to Patient Dashboard → Diagnostics
-3. Click on any diagnostic entry to open the video modal
-4. Use Play/Pause controls to watch the simulated medical instructions
-5. Pause at any time to ask the AI assistant questions about what you've watched
-6. The AI will only answer based on the content you've seen up to that point
+### For Doctors (`/doctor`)
+
+#### Recording Video Instructions
+1. Navigate to **Doctor Portal** → **Patient Management**
+2. Click **"Record New Instruction"**
+3. Grant camera/microphone permissions
+4. Record your medical instruction video
+5. Review auto-generated subtitles (editable)
+6. Add title and description
+7. Send to patient
+
+#### Prescribing Medications with Genetic Analysis
+1. Click **"Prescribe Medicine"**
+2. Choose input method:
+   - **Manual**: Enter genetic variants (rsID or Gene + Star Allele)
+   - **File Upload**: Upload CSV/PDF with genetic data
+3. Enter medication names
+4. Add patient context (optional but recommended)
+5. Click **"Analyze & Prescribe"**
+6. Review AI analysis showing:
+   - Risk level (Low/Moderate/High)
+   - Evidence of drug-gene interactions
+   - Alternative medications if needed
+7. Add safe medications to prescription
+8. Click **"Finalize & Send to Patient"**
+
+### For Patients (`/patient`)
+
+#### Watching Medical Videos
+1. Navigate to **Patient Portal** → **Medical Video Library**
+2. Click on any video to watch
+3. Use built-in controls (play, pause, seek)
+4. View synchronized subtitles
+5. Pause anytime to ask the AI assistant questions
+6. AI provides context-aware answers based on video content
+
+#### Managing Prescriptions
+1. Go to **Patient Portal** → **My Prescriptions**
+2. View all prescribed medications
+3. Mark prescriptions as read
+4. Download prescription files
 
 ## Features in Detail
 
-### Video Player
-- Simulated medical instruction videos with subtitles
-- Play/Pause/Reset controls
-- Progress bar with manual scrubbing
-- Synchronized subtitles that update as the video plays
+### Pharmacogenomics Analysis
+The system integrates with **EpiRisk MSCS Pharmacogenomics API** to analyze genetic variants against medications:
 
-### AI Assistant
-- Context-aware responses based on video timestamp
-- Medical instruction clarification
-- Simple, patient-friendly language
+**Supported Genetic Formats:**
+- rsID + Genotype (e.g., `rs3892097: AA`)
+- Gene + Star Allele (e.g., `CYP2D6: *4/*4`)
+
+**Analysis Output:**
+- Risk classification (Low/Moderate/High)
+- Clinical evidence for drug-gene interactions
+- Actionable recommendations
+- Alternative medication suggestions with:
+  - Benefits of each alternative
+  - Important considerations
+  - Safety profiles based on genetic data
+
+**Patient Context Integration:**
+- Age, sex, ancestry
+- Current medications
+- Comorbidities
+- Known allergies
+
+### 24/7 Distance Care
+
+**Video Instruction System:**
+- Real camera recording with live preview
+- Automatic speech-to-text transcription via Groq Whisper
+- Editable timestamps and text (YouTube-style interface)
+- SRT subtitle export support
+- Secure video streaming from backend
+
+**AI Medical Assistant:**
+- Context-aware Q&A based on video transcript
 - Powered by Groq's Llama 3.3 70B model
+- Understands medical terminology
+- Patient-friendly explanations
+- Time-aware responses (only answers about content already watched)
 
-### Diagnostic Types
-- Cognitive Assessment Instructions
-- Memory Assessment Results
-- Speech Therapy Instructions
-- Daily Living Skills Review
-- Physical Exercise Guide
-- Nutrition Guidelines
+**Access & Privacy:**
+- 24/7 access to all medical instructions
+- Watch tracking for doctor visibility
+- All data stored securely on-premise
+- No third-party data sharing
 
 ## Development
 
@@ -188,6 +309,41 @@ pnpm dev  # Hot-reloads on file changes
 ### CORS Issues
 - The backend is configured to accept requests from localhost:3000
 - If using different ports, update `ALLOWED_ORIGINS` in `backend/app/core/config.py`
+
+### Pharmacogenomics API Issues
+- The system uses EpiRisk MSCS API (https://healthhack-mscs-epirisk.onrender.com)
+- If the external API is unavailable, the system will show error messages
+- Ensure stable internet connection for genetic analysis features
+
+## Clinical Use Case
+
+This platform addresses two critical healthcare challenges:
+
+1. **Adverse Drug Reactions (ADRs)**: By analyzing pharmacogenomics data, doctors can identify patients at high risk for ADRs before prescribing, preventing potentially dangerous drug-gene interactions.
+
+2. **Healthcare Accessibility**: The 24/7 distance care system enables patients to access medical instructions anytime from home, especially beneficial for:
+   - Elderly patients who may forget verbal instructions
+   - Patients in rural or remote areas
+   - Follow-up care and medication adherence
+   - Reducing unnecessary clinic visits
+
+## Security & Privacy
+
+- All patient data is stored locally in the backend
+- Video files are securely streamed (not exposed via public URLs)
+- Genetic data is processed but not permanently stored
+- AI chat conversations are session-based
+- HIPAA-compliant architecture (when deployed with proper infrastructure)
+
+## Future Enhancements
+
+- Multi-patient support with authentication
+- Integration with Electronic Health Records (EHR)
+- Automated medication adherence tracking
+- Pharmacist review workflow
+- Mobile app for iOS/Android
+- Real-time video consultations
+- Multi-language support
 
 ## License
 
