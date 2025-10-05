@@ -27,7 +27,7 @@ export default function Home() {
             HealthCare Portal
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comprehensive health management for patients and guardians
+            Comprehensive health management for patients and doctors
           </p>
         </div>
 
@@ -54,21 +54,21 @@ export default function Home() {
             </Card>
           </Link>
 
-          {/* Guardian Portal */}
-          <Link href="/guardian">
+          {/* Doctor Portal */}
+          <Link href="/doctor">
             <Card className="h-full hover:shadow-lg transition-all duration-300 cursor-pointer group border-2 hover:border-primary/50">
               <CardHeader>
                 <div className="w-14 h-14 bg-secondary rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                   <Users className="w-7 h-7" />
                 </div>
-                <CardTitle className="text-2xl">Guardian Dashboard</CardTitle>
+                <CardTitle className="text-2xl">Doctor Dashboard</CardTitle>
                 <CardDescription className="mt-2">
-                  Monitor and manage health information for your dependents with secure access controls.
+                  Manage patient records, create video instructions, and monitor treatment progress.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center group-hover:translate-x-1 transition-transform">
-                  <span className="text-sm font-medium">Enter Guardian Portal</span>
+                  <span className="text-sm font-medium">Enter Doctor Portal</span>
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </div>
               </CardContent>

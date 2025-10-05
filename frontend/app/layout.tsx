@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HealthCare Portal",
-  description: "Comprehensive health management for patients and guardians",
+  description: "Comprehensive health management for patients and doctors",
 };
 
 export default function RootLayout({

@@ -28,7 +28,7 @@ The `/app` folder should maintain a clean structure with:
 - `globals.css` - Global styles
 - `favicon.ico` - Site favicon
 - `/patient` - Patient portal routes
-- `/guardian` - Guardian portal routes
+- `/doctor` - Doctor portal routes
 
 ### Components Location
 - All shared components should be in the root `/components` folder
