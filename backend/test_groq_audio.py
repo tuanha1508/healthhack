@@ -5,7 +5,7 @@ import os
 from groq import Groq
 
 # Get API key from environment or settings
-api_key = os.getenv('GROQ_API_KEY', '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')
+api_key = os.getenv('GROQ_API_KEY')  # Should be set in .env file
 
 try:
     client = Groq(api_key=api_key)
