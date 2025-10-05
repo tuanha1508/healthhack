@@ -40,7 +40,7 @@ export default function LocalVideoPlayer({
   const [currentSubtitle, setCurrentSubtitle] = useState<string>('');
   const [videoError, setVideoError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update video playback based on isPlaying prop
   useEffect(() => {
