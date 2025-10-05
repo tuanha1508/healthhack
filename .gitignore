@@ -57,6 +57,7 @@ next-env.d.ts
 
 # Large files and directories
 backend/uploaded_videos/
+backend/prescriptions_data/
 *.mp4
 *.mov
 *.avi
