@@ -98,7 +98,7 @@ export default function DiagnosticsPage() {
     setMessages([
       {
         id: 1,
-        text: "Hello! I'm here to help you understand this educational video about brain nutrition. Feel free to pause at any time to ask questions about what you've watched.",
+        text: "Hello! I'm here to help you understand this medical video from your doctor. Feel free to ask me any questions at any time - I can provide information about topics covered in the video, whether you've watched that part yet or not. I'll let you know if something will be explained later while still giving you the answer you need.",
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }

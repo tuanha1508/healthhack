@@ -1,5 +1,5 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Request
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from typing import List, Optional
 import os
 import json
@@ -14,8 +14,53 @@ router = APIRouter()
 VIDEOS_DIR = Path("uploaded_videos")
 VIDEOS_DIR.mkdir(exist_ok=True)
 
-# In-memory storage for video metadata (will be replaced with database later)
-video_storage = []
+# JSON file for persisting video metadata
+METADATA_FILE = VIDEOS_DIR / "video_metadata.json"
+
+# Load existing video metadata or initialize empty storage
+def load_video_storage():
+    """Load video metadata from JSON file"""
+    if METADATA_FILE.exists():
+        try:
+            with open(METADATA_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading video metadata: {e}")
+            return []
+    return []
+
+def save_video_storage():
+    """Save video metadata to JSON file"""
+    try:
+        with open(METADATA_FILE, 'w') as f:
+            json.dump(video_storage, f, indent=2, default=str)
+    except Exception as e:
+        print(f"Error saving video metadata: {e}")
+
+# Initialize video storage from file
+video_storage = load_video_storage()
+
+def cleanup_orphaned_files():
+    """Clean up orphaned video files and metadata entries"""
+    # Remove metadata entries for missing video files
+    global video_storage
+    cleaned_storage = []
+    for video in video_storage:
+        video_path = VIDEOS_DIR / video.get("filename", "")
+        if video_path.exists():
+            cleaned_storage.append(video)
+        else:
+            print(f"Removing metadata for missing video file: {video.get('filename')}")
+
+    if len(cleaned_storage) != len(video_storage):
+        video_storage = cleaned_storage
+        save_video_storage()
+
+    # Note: We don't delete video files without metadata to avoid accidental data loss
+    # Those files can be manually cleaned up if needed
+
+# Clean up on startup
+cleanup_orphaned_files()
 
 @router.post("/upload")
 async def upload_video(
@@ -58,8 +103,9 @@ async def upload_video(
             "type": "Doctor Instruction"
         }
 
-        # Store in memory (replace with database later)
+        # Store in memory and persist to file
         video_storage.append(video_data)
+        save_video_storage()
 
         return JSONResponse(content={
             "success": True,
@@ -94,9 +140,9 @@ async def list_videos():
     })
 
 @router.get("/stream/{video_id}")
-async def stream_video(video_id: str):
+async def stream_video(video_id: str, request: Request):
     """
-    Stream a video file
+    Stream a video file with range request support
     """
     # Find video in storage
     video_data = next((v for v in video_storage if v["id"] == video_id), None)
@@ -109,14 +155,79 @@ async def stream_video(video_id: str):
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found")
 
-    return FileResponse(
-        path=video_path,
-        media_type="video/webm",
-        headers={
-            "Accept-Ranges": "bytes",
-            "Content-Disposition": f"inline; filename={video_data['filename']}"
-        }
-    )
+    # Get file size
+    file_size = video_path.stat().st_size
+
+    # Check if range request
+    range_header = request.headers.get('range')
+
+    if range_header:
+        # Parse range header
+        try:
+            range_start = int(range_header.split('=')[1].split('-')[0])
+            range_end = file_size - 1
+            if '-' in range_header.split('=')[1] and range_header.split('=')[1].split('-')[1]:
+                range_end = int(range_header.split('=')[1].split('-')[1])
+        except (ValueError, IndexError):
+            range_start = 0
+            range_end = file_size - 1
+
+        # Open file and read the requested range
+        def iterfile():
+            with open(video_path, 'rb') as file:
+                file.seek(range_start)
+                chunk_size = 8192
+                current_position = range_start
+                while current_position <= range_end:
+                    remaining = range_end - current_position + 1
+                    read_size = min(chunk_size, remaining)
+                    data = file.read(read_size)
+                    if not data:
+                        break
+                    current_position += len(data)
+                    yield data
+
+        # Determine content type based on file extension
+        file_ext = video_data["filename"].split('.')[-1].lower()
+        content_type = {
+            'webm': 'video/webm',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+            'avi': 'video/x-msvideo'
+        }.get(file_ext, 'video/webm')
+
+        return StreamingResponse(
+            iterfile(),
+            status_code=206,
+            media_type=content_type,
+            headers={
+                'Content-Range': f'bytes {range_start}-{range_end}/{file_size}',
+                'Accept-Ranges': 'bytes',
+                'Content-Length': str(range_end - range_start + 1),
+                'Content-Disposition': f'inline; filename={video_data["filename"]}',
+                'Cache-Control': 'no-cache'
+            }
+        )
+    else:
+        # Regular file response for non-range requests
+        file_ext = video_data["filename"].split('.')[-1].lower()
+        content_type = {
+            'webm': 'video/webm',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+            'avi': 'video/x-msvideo'
+        }.get(file_ext, 'video/webm')
+
+        return FileResponse(
+            path=video_path,
+            media_type=content_type,
+            headers={
+                "Accept-Ranges": "bytes",
+                "Content-Disposition": f"inline; filename={video_data['filename']}",
+                "Cache-Control": "no-cache",
+                "Content-Length": str(file_size)
+            }
+        )
 
 @router.get("/{video_id}")
 async def get_video_details(video_id: str):
@@ -129,6 +240,22 @@ async def get_video_details(video_id: str):
         raise HTTPException(status_code=404, detail="Video not found")
 
     return JSONResponse(content=video_data)
+
+@router.post("/reload")
+async def reload_video_metadata():
+    """
+    Reload video metadata from file
+    """
+    global video_storage
+    try:
+        video_storage = load_video_storage()
+        cleanup_orphaned_files()
+        return JSONResponse(content={
+            "success": True,
+            "message": f"Reloaded metadata for {len(video_storage)} videos"
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{video_id}/status")
 async def update_video_status(video_id: str, status: str):
@@ -144,6 +271,9 @@ async def update_video_status(video_id: str, status: str):
 
     if status == "watched":
         video_data["completed_at"] = datetime.now().isoformat()
+
+    # Save changes to file
+    save_video_storage()
 
     return JSONResponse(content={
         "success": True,

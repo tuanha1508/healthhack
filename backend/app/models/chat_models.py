@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class TranscriptItem(BaseModel):
-    timestamp: float  # in seconds
+    timestamp: Optional[float] = 0.0  # in seconds, default to 0 if not provided
     text: str
 
 class ChatRequest(BaseModel):

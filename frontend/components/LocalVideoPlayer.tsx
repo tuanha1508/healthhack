@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Play, Pause, RotateCcw, Volume2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TranscriptItem {
   timestamp?: number;
@@ -37,6 +38,9 @@ export default function LocalVideoPlayer({
   const [volume, setVolume] = useState(1);
   const [buffered, setBuffered] = useState(0);
   const [currentSubtitle, setCurrentSubtitle] = useState<string>('');
+  const [videoError, setVideoError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Update video playback based on isPlaying prop
   useEffect(() => {
@@ -52,9 +56,20 @@ export default function LocalVideoPlayer({
   // Load video metadata when URL changes
   useEffect(() => {
     if (videoRef.current && videoUrl) {
+      setVideoError('');
+      setIsLoading(true);
       videoRef.current.load();
     }
   }, [videoUrl]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle time updates
   useEffect(() => {
@@ -109,11 +124,79 @@ export default function LocalVideoPlayer({
       }
     };
 
+    const handleLoadStart = () => {
+      console.log('Video loading started');
+      setIsLoading(true);
+      setVideoError('');
+    };
+
+    const handleCanPlayThrough = () => {
+      console.log('Video can play through');
+      setIsLoading(false);
+    };
+
+    const handleError = (e: Event) => {
+      console.error('Video error:', e);
+      const video = e.target as HTMLVideoElement;
+
+      if (video.error) {
+        let errorMessage = 'Video playback error';
+        switch (video.error.code) {
+          case 1: // MEDIA_ERR_ABORTED
+            errorMessage = 'Video loading was aborted';
+            break;
+          case 2: // MEDIA_ERR_NETWORK
+            errorMessage = 'Network error while loading video';
+            break;
+          case 3: // MEDIA_ERR_DECODE
+            errorMessage = 'Video decoding error';
+            break;
+          case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+            errorMessage = 'Video format not supported';
+            break;
+        }
+        setVideoError(errorMessage);
+        setIsLoading(false);
+
+        // Auto-retry after 3 seconds for network errors
+        if (video.error.code === 2) {
+          retryTimeoutRef.current = setTimeout(() => {
+            handleRetryLoad();
+          }, 3000);
+        }
+      }
+    };
+
+    const handleStalled = () => {
+      console.log('Video stalled - attempting to recover');
+      // Try to recover from stalled state
+      if (video.readyState < 3) { // HAVE_FUTURE_DATA
+        video.load();
+      }
+    };
+
+    const handleWaiting = () => {
+      console.log('Video waiting for data');
+      setIsLoading(true);
+    };
+
+    const handlePlaying = () => {
+      console.log('Video playing');
+      setIsLoading(false);
+      setVideoError('');
+    };
+
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('durationchange', handleDurationChange);
     video.addEventListener('progress', handleProgress);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('canplaythrough', handleCanPlayThrough);
+    video.addEventListener('error', handleError);
+    video.addEventListener('stalled', handleStalled);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('playing', handlePlaying);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
@@ -121,6 +204,12 @@ export default function LocalVideoPlayer({
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('progress', handleProgress);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('canplaythrough', handleCanPlayThrough);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('stalled', handleStalled);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('playing', handlePlaying);
     };
   }, [transcript, onTimeUpdate, onDurationChange]);
 
@@ -168,12 +257,39 @@ export default function LocalVideoPlayer({
     }
   };
 
+  const handleRetryLoad = () => {
+    console.log('Retrying video load');
+    setVideoError('');
+    setIsLoading(true);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+  };
+
   // Determine if this is a local video or external URL
   const isLocalVideo = videoUrl.startsWith('/api/videos/');
   const fullVideoUrl = isLocalVideo ? `http://localhost:8000${videoUrl}` : videoUrl;
 
   return (
     <div className="space-y-4">
+      {/* Error Alert */}
+      {videoError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{videoError}</span>
+            <Button
+              onClick={handleRetryLoad}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Video Container */}
       <div className="relative bg-black rounded-lg overflow-hidden">
         <video
@@ -183,11 +299,21 @@ export default function LocalVideoPlayer({
           onClick={handlePlayPause}
           controls={false}
           preload="metadata"
-          onError={(e) => console.error('Video error:', e)}
+          crossOrigin="anonymous"
         />
 
+        {/* Loading Overlay */}
+        {isLoading && !videoError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="text-white flex flex-col items-center">
+              <Loader2 className="h-8 w-8 animate-spin mb-2" />
+              <p className="text-sm">Loading video...</p>
+            </div>
+          </div>
+        )}
+
         {/* Subtitle Overlay */}
-        {currentSubtitle && (
+        {currentSubtitle && !videoError && (
           <div className="absolute bottom-20 left-0 right-0 text-center px-4">
             <div className="inline-block bg-black/75 text-white px-4 py-2 rounded">
               <p className="text-lg">{currentSubtitle}</p>
