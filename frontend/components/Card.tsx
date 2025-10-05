@@ -14,7 +14,7 @@ export function Card({ children, className, title, subtitle, action }: CardProps
   return (
     <div className={cn("bg-card text-card-foreground rounded-lg border", className)}>
       {(title || subtitle || action) && (
-        <div className="border-b px-6 py-4">
+        <div className="border-b px-6 py-2">
           <div className="flex items-center justify-between">
             <div>
               {title && <h3 className="text-lg font-semibold">{title}</h3>}

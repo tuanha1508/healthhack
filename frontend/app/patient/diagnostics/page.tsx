@@ -247,7 +247,7 @@ export default function DiagnosticsPage() {
         </div>
 
         {/* Diagnostics List */}
-        <Card title="Available Videos" subtitle="Click on any video to watch and learn">
+        <Card title="Available Videos">
           <div className="space-y-4">
             {isLoading && diagnosticHistory.length === 0 ? (
               <div className="flex items-center justify-center p-8">

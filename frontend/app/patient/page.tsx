@@ -225,7 +225,7 @@ export default function PatientDashboard() {
         )}
 
         {/* Recent Activity */}
-        <Card title="Recent Activity" subtitle="Your latest interactions and updates">
+        <Card title="Recent Activity">
           <div className="space-y-4">
             {recentActivity.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">

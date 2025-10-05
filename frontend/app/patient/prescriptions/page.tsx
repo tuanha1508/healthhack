@@ -180,22 +180,17 @@ Generated: ${new Date().toLocaleString()}
                 <div className="p-6 space-y-4">
                   {/* Header */}
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <Pill className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">New Prescription</h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {prescription.doctor_name}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(prescription.created_at)}
-                          </span>
-                        </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">New Prescription</h3>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {prescription.doctor_name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(prescription.created_at)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -231,23 +226,14 @@ Generated: ${new Date().toLocaleString()}
                         {prescription.medications.map((medication, index) => (
                           <li
                             key={index}
-                            className="flex items-center gap-2 text-sm font-medium"
+                            className="text-sm font-medium"
                           >
-                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            <span>{medication}</span>
+                            - {medication}
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
-
-                  {/* Important Notice */}
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-sm">
-                      Please follow your doctor's instructions. If you have any questions or concerns about these medications, contact your healthcare provider.
-                    </AlertDescription>
-                  </Alert>
 
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-2 border-t">
